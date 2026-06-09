@@ -1,0 +1,323 @@
+﻿<!-- IDLE WARNING MODAL -->
+<div class="idle-modal-overlay" id="idleModal">
+    <div class="idle-modal-box">
+        <div class="idle-modal-icon">
+            <i class="fas fa-hourglass-half"></i>
+        </div>
+        <h3>Session Expiring Soon!</h3>
+        <p>You've been inactive for a while.</p>
+        <div class="idle-timer">
+            <span id="idleCountdown">30</span> seconds
+        </div>
+        <p style="font-size: 12px; color: #999;">Click "Stay Logged In" to continue your session.</p>
+        <div class="idle-modal-actions">
+            <button class="idle-btn-logout" onclick="forceLogout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+            <button class="idle-btn-stay" onclick="resetIdleTimer()">
+                <i class="fas fa-user-check"></i> Stay Logged In
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Idle Warning Modal */
+    .idle-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        z-index: 10000;
+        justify-content: center;
+        align-items: center;
+        cursor: default;
+    }
+
+        .idle-modal-overlay.active {
+            display: flex;
+        }
+
+    .idle-modal-box {
+        background: white;
+        border-radius: 20px;
+        width: 400px;
+        max-width: 90%;
+        text-align: center;
+        animation: modalPopIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        cursor: default;
+    }
+
+    @@keyframes modalPopIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .idle-modal-icon {
+        width: 80px;
+        height: 80px;
+        background: #fff3e0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 30px auto 20px;
+        font-size: 40px;
+        color: #ff9800;
+    }
+
+    .idle-modal-box h3 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1a237e;
+        margin-bottom: 10px;
+    }
+
+    .idle-modal-box p {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 10px;
+        padding: 0 20px;
+    }
+
+    .idle-timer {
+        font-size: 28px;
+        font-weight: 700;
+        color: #c62828;
+        margin: 15px 0;
+    }
+
+    .idle-modal-actions {
+        padding: 20px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .idle-btn-stay {
+        background: #1a237e;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .idle-btn-stay:hover {
+            background: #283593;
+            transform: translateY(-2px);
+        }
+
+    .idle-btn-logout {
+        background: #c62828;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-right: 10px;
+    }
+
+        .idle-btn-logout:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
+</style>
+
+<script>
+    // ========== PERSISTENT IDLE TIMEOUT - WORKS ACROSS TABS ==========
+    var idleTimeoutSeconds = 180; // 3 minutes
+    var warningSeconds = 30;
+
+    // Use sessionStorage to track last activity time across same-site tabs
+    var LAST_ACTIVITY_KEY = 'pub_last_activity_time';
+    var IDLE_WARNING_SHOWN_KEY = 'pub_idle_warning_shown';
+
+    var countdownTimer = null;
+    var currentCountdown = warningSeconds;
+    var idleModal = document.getElementById('idleModal');
+    var countdownElement = document.getElementById('idleCountdown');
+    var isModalShowing = false;  // Track modal state
+
+    // Update last activity time (called on user interaction)
+    function updateLastActivityTime() {
+        // CRITICAL FIX: Do NOT update activity if modal is showing
+        if (isModalShowing) {
+            return;
+        }
+
+        var now = Date.now();
+        sessionStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+
+        // Clear warning state if user becomes active
+        if (sessionStorage.getItem(IDLE_WARNING_SHOWN_KEY) === 'true') {
+            sessionStorage.removeItem(IDLE_WARNING_SHOWN_KEY);
+            closeIdleModal();
+            stopCountdown();
+        }
+    }
+
+    // Stop countdown timer
+    function stopCountdown() {
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+        }
+    }
+
+    // Start the periodic idle check (called ONLY once on page load)
+    function startIdleCheck() {
+        // Remove existing interval if any
+        if (window._idleCheckInterval) {
+            clearInterval(window._idleCheckInterval);
+        }
+
+        // Check every second for accuracy
+        window._idleCheckInterval = setInterval(function() {
+            // Don't check if modal is showing? No - we still need to check for timeout
+            // But we don't want to auto-close due to activity detection
+
+            var lastActivityStr = sessionStorage.getItem(LAST_ACTIVITY_KEY);
+            if (!lastActivityStr) {
+                // First time - set current time
+                updateLastActivityTime();
+                return;
+            }
+
+            var lastActivity = parseInt(lastActivityStr);
+            var now = Date.now();
+            var idleDuration = (now - lastActivity) / 1000; // seconds
+
+            // Check if warning is already shown
+            var warningShown = sessionStorage.getItem(IDLE_WARNING_SHOWN_KEY) === 'true';
+
+            if (idleDuration >= idleTimeoutSeconds + warningSeconds) {
+                // Time's up - force logout
+                forceLogout();
+            }
+            else if (idleDuration >= idleTimeoutSeconds && !warningShown) {
+                // Show warning modal
+                showIdleWarning();
+            }
+        }, 1000);
+    }
+
+    function showIdleWarning() {
+        // Don't show if already showing
+        if (sessionStorage.getItem(IDLE_WARNING_SHOWN_KEY) === 'true') return;
+
+        // Mark warning as shown in sessionStorage
+        sessionStorage.setItem(IDLE_WARNING_SHOWN_KEY, 'true');
+        isModalShowing = true;  // Set flag to prevent activity updates
+        currentCountdown = warningSeconds;
+
+        if (countdownElement) {
+            countdownElement.textContent = currentCountdown;
+        }
+
+        if (idleModal) {
+            idleModal.classList.add('active');
+            preventBodyScroll(true);
+        }
+
+        // Start countdown timer
+        stopCountdown();
+        countdownTimer = setInterval(function() {
+            currentCountdown--;
+            if (countdownElement) {
+                countdownElement.textContent = currentCountdown;
+            }
+
+            if (currentCountdown <= 0) {
+                stopCountdown();
+                forceLogout();
+            }
+        }, 1000);
+    }
+
+    function closeIdleModal() {
+        if (!idleModal) return;
+        idleModal.classList.remove('active');
+        preventBodyScroll(false);
+        stopCountdown();
+        isModalShowing = false;  // Reset flag
+    }
+
+    function forceLogout() {
+        // Clean up
+        if (window._idleCheckInterval) {
+            clearInterval(window._idleCheckInterval);
+            window._idleCheckInterval = null;
+        }
+        stopCountdown();
+
+        // Clear session storage
+        sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+        sessionStorage.removeItem(IDLE_WARNING_SHOWN_KEY);
+
+        isModalShowing = false;
+
+        // Close modal if open
+        if (idleModal) {
+            idleModal.classList.remove('active');
+            preventBodyScroll(false);
+        }
+
+        // Redirect to logout
+        window.location.href = '/Account/Logout';
+    }
+
+    function preventBodyScroll(shouldPrevent) {
+        if (shouldPrevent) {
+            document.body.classList.add('modal-open');
+        } else {
+            document.body.classList.remove('modal-open');
+        }
+    }
+
+    // ========== Track user activity (updates the timestamp) ==========
+    // REMOVED 'mousemove' to prevent accidental resets
+    var activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click', 'keydown'];
+    activityEvents.forEach(function(eventName) {
+        document.addEventListener(eventName, updateLastActivityTime, true);
+    });
+
+    // When page becomes visible again, check immediately (don't reset!)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            var lastActivityStr = sessionStorage.getItem(LAST_ACTIVITY_KEY);
+            if (lastActivityStr) {
+                var idleDuration = (Date.now() - parseInt(lastActivityStr)) / 1000;
+                if (idleDuration >= idleTimeoutSeconds + warningSeconds) {
+                    forceLogout();
+                }
+            }
+        }
+    });
+
+    // Initialize
+    if (!sessionStorage.getItem(LAST_ACTIVITY_KEY)) {
+        updateLastActivityTime();
+    }
+    startIdleCheck();
+
+    // Make functions global for modal buttons
+    window.resetIdleTimer = updateLastActivityTime;
+    window.forceLogout = forceLogout;
+</script>

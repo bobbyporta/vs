@@ -1,0 +1,1651 @@
+﻿    @using System.Text.Encodings.Web
+    @{
+        Layout = "_Layout";
+        ViewData["Title"] = "Bus Fleet Management";
+
+        var driverDict = (ViewBag.AllDrivers as List<PUBReservationSystem.Models.Employee> ?? new List<PUBReservationSystem.Models.Employee>())
+                          .ToDictionary(e => e.Employee_ID, e => e.Full_Name);
+
+    var role = Context.Session.GetString("Role") ?? "";
+    bool isAdmin = role == "Admin";
+    }
+
+    <style>
+        /* =========================================
+               PAGE LOAD ANIMATIONS
+               ========================================= */
+        @@keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-item {
+            opacity: 0;
+            animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.3s;
+        }
+
+        .delay-4 {
+            animation-delay: 0.4s;
+        }
+
+        /* =========================================
+               DASHBOARD-MATCHED LAYOUT & SPACING
+               ========================================= */
+        .buses-view-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding-bottom: 40px;
+            color: #334155;
+        }
+
+        .page-header-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f1c3f;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-header-subtitle {
+            font-size: 13px;
+            color: #64748b;
+            margin: 0;
+        }
+
+        /* =========================================
+               STAT CARDS
+               ========================================= */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .stat-card-dash {
+            background: #ffffff;
+            padding: 20px 24px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-top: 4px solid transparent;
+        }
+
+            .stat-card-dash:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            }
+
+            .stat-card-dash.blue {
+                border-top-color: #3b82f6;
+            }
+
+            .stat-card-dash.green {
+                border-top-color: #10b981;
+            }
+
+            .stat-card-dash.red {
+                border-top-color: #ef4444;
+            }
+
+        .stat-icon-dash {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .stat-card-dash.blue .stat-icon-dash {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .stat-card-dash.green .stat-icon-dash {
+            background: #ecfdf5;
+            color: #10b981;
+        }
+
+        .stat-card-dash.red .stat-icon-dash {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .stat-details-dash {
+            display: flex;
+            flex-direction: column;
+        }
+
+            .stat-details-dash .value {
+                font-size: 28px;
+                font-weight: 800;
+                color: #0f1c3f;
+                line-height: 1;
+                margin-bottom: 6px;
+            }
+
+            .stat-details-dash .label {
+                font-size: 13px;
+                color: #64748b;
+                font-weight: 500;
+            }
+
+        /* =========================================
+               FILTER & ACTION CONTAINER
+               ========================================= */
+        .filter-container-card {
+            background: #ffffff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-wrap-dash {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+            .search-wrap-dash i {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #94a3b8;
+                font-size: 14px;
+            }
+
+            .search-wrap-dash input {
+                width: 100%;
+                padding: 10px 16px 10px 42px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                font-size: 13.5px;
+                background: #f8fafc;
+                color: #334155;
+                outline: none;
+                transition: all 0.2s;
+            }
+
+                .search-wrap-dash input:focus {
+                    border-color: #3b82f6;
+                    background: #ffffff;
+                    box-shadow: 0 0 0 3px rgba(59, 108, 247, 0.1);
+                }
+
+        .filter-select-dash {
+            padding: 10px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13.5px;
+            background: #f8fafc;
+            color: #475569;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+            .filter-select-dash:focus {
+                border-color: #3b82f6;
+                background: #ffffff;
+            }
+
+        .btn-dash {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .btn-dash-primary {
+            background: #0f1c3f;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(15, 28, 63, 0.2);
+        }
+
+            .btn-dash-primary:hover {
+                background: #1e293b;
+                transform: translateY(-1px);
+            }
+
+        .btn-dash-secondary {
+            background: #ffffff;
+            color: #475569;
+            border-color: #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+            .btn-dash-secondary:hover {
+                background: #f1f5f9;
+                color: #0f1c3f;
+            }
+
+        /* =========================================
+               3x3 GRID CARDS & FILTER ANIMATION
+               ========================================= */
+        .buses-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @@media (max-width: 1024px) {
+            .buses-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .buses-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .bus-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-top: 4px solid #cbd5e1;
+            /* Filter Animation Properties */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+            transform: scale(1);
+            opacity: 1;
+        }
+
+            .bus-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            }
+
+            /* Class added via JS when filtering out */
+            .bus-card.filtering-out {
+                transform: scale(0.9);
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            /* Class added via JS after animation completes */
+            .bus-card.hidden {
+                display: none !important;
+            }
+
+            .bus-card.status-available {
+                border-top-color: #10b981;
+            }
+
+            .bus-card.status-in-transit {
+                border-top-color: #f59e0b;
+            }
+
+            .bus-card.status-maintenance {
+                border-top-color: #ef4444;
+            }
+
+        .bus-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .bus-card-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f1c3f;
+            margin: 0 0 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bus-card-id {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Badges */
+        .type-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+            .type-badge.ac {
+                background: #e0f2fe;
+                color: #0369a1;
+                border: 1px solid #bae6fd;
+            }
+
+            .type-badge.or {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+            }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+            .status-badge.available {
+                background: #ecfdf5;
+                color: #10b981;
+            }
+
+            .status-badge.in-transit {
+                background: #fffbeb;
+                color: #f59e0b;
+            }
+
+            .status-badge.maintenance {
+                background: #fef2f2;
+                color: #ef4444;
+            }
+
+        .bus-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+            margin-bottom: 20px;
+        }
+
+        .bus-detail-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13.5px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #f1f5f9;
+        }
+
+            .bus-detail-row:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+        .bus-detail-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .bus-detail-value {
+            color: #0f1c3f;
+            font-weight: 700;
+        }
+
+            .bus-detail-value.good {
+                color: #10b981;
+            }
+
+            .bus-detail-value.maint {
+                color: #ef4444;
+            }
+
+        .bus-card-footer {
+            display: flex;
+            gap: 10px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-action-card {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-action-edit {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+            .btn-action-edit:hover {
+                background: #e2e8f0;
+                color: #0f1c3f;
+            }
+
+        .btn-action-delete {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+            .btn-action-delete:hover {
+                background: #fee2e2;
+            }
+
+        @@keyframes newCardFlash {
+            0% {
+                background: #eff6ff;
+                transform: scale(0.98);
+            }
+
+            100% {
+                background: #ffffff;
+                transform: scale(1);
+            }
+        }
+
+        .newly-added-card {
+            animation: newCardFlash 1s ease forwards !important;
+        }
+
+        /* =========================================
+               MODAL ANIMATIONS & SCROLL LOCK
+               ========================================= */
+        body.modal-open {
+            overflow: hidden; /* Blocks scrolling outside */
+        }
+
+        .sys-modal-overlay {
+            /* Ensure smooth fade */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+            .sys-modal-overlay.active-modal {
+                opacity: 1;
+                visibility: visible;
+                display: flex !important;
+            }
+
+        .sys-modal {
+            /* Smooth pop-up scale */
+            transform: translateY(20px) scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sys-modal-overlay.active-modal .sys-modal {
+            transform: translateY(0) scale(1);
+        }
+
+        /* UX: Shake animation when clicking outside */
+    
+
+        /* =========================================
+               FORM & REQUIRED INDICATORS
+               ========================================= */
+        .form-label-sys.required::after {
+            content: " *";
+            color: #ef4444; /* Standard red color for required asterisk */
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+
+        /* =========================================
+               CARD UPDATE ANIMATION (Slide Left to Right)
+               ========================================= */
+        @@keyframes slideFadeLeftToRight {
+            0% {
+                transform: translateX(-30px);
+                opacity: 0;
+                background: #f8fafc;
+            }
+
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+                background: #ffffff;
+            }
+        }
+
+        .card-update-slide {
+            animation: slideFadeLeftToRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+        }
+
+        /* =========================================
+               DANGER BUTTONS & CENTERED MODALS (CLEAN)
+               ========================================= */
+        /* Dash Danger Button */
+        /* Dash Danger Button (Solid Red) */
+        .btn-dash-danger {
+            background: #ef4444; /* Solid red background */
+            color: #ffffff; /* White text/icon */
+            border: 1px solid #ef4444; /* Matching border */
+            transition: all 0.2s ease;
+        }
+
+            .btn-dash-danger:hover {
+                background: #dc2626; /* Slightly darker red on hover */
+                border-color: #dc2626;
+                color: #ffffff;
+                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2); /* Nice subtle red glow */
+            }
+
+        /* Centered Modal Layout Helpers */
+        .modal-body-center {
+            text-align: center;
+            padding-top: 32px;
+        }
+
+        .modal-footer-center {
+            justify-content: center;
+            padding-bottom: 32px;
+            border-top: none;
+        }
+
+        /* Modal Icon & Typography */
+        .modal-icon-danger {
+            width: 72px;
+            height: 72px;
+            background: #fef2f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 32px;
+            color: #ef4444;
+        }
+
+        .modal-title-center {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f1c3f;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle-center {
+            color: #64748b;
+            font-size: 14.5px;
+            margin-bottom: 16px;
+        }
+
+        /* Highlighted Data Box (e.g. for Plate Numbers) */
+        .modal-highlight-box {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .modal-highlight-text {
+            font-size: 18px;
+            color: #1e293b;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        /* Animation for the icon */
+        @@keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin-active {
+            animation: spin 0.6s linear;
+        }
+
+        /* Enhanced Reset Button Color */
+        /* Blue Floating Reset Button */
+        .btn-dash-reset {
+            background: #eff6ff; /* Light blue background */
+            color: #3b82f6; /* Blue text */
+            border: 1px solid #bfdbfe;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth transition for everything */
+        }
+
+            .btn-dash-reset:hover {
+                background: #3b82f6; /* Darker blue background on hover */
+                color: #ffffff; /* White text on hover */
+                transform: translateY(-4px); /* The "Floating" lift */
+                box-shadow: 0 8px 15px -3px rgba(59, 130, 246, 0.4); /* The "Shadow" depth */
+                border-color: #3b82f6;
+            }
+
+                /* Ensure the icon color matches the text during hover */
+                .btn-dash-reset:hover i {
+                    color: #ffffff;
+                }
+
+        /* Update the existing hover and add these specific color rules */
+        .stat-card-dash {
+            border: 1px solid #e2e8f0; /* Base thin border */
+            border-top: 4px solid transparent; /* Thick top accent */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+            /* Base class border colors (stays as you had them) */
+            .stat-card-dash.blue {
+                border-top-color: #3b82f6;
+            }
+
+            .stat-card-dash.green {
+                border-top-color: #10b981;
+            }
+
+            .stat-card-dash.red {
+                border-top-color: #ef4444;
+            }
+
+            /* The new "Floating" border effect */
+            .stat-card-dash:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            }
+
+            .stat-card-dash.blue:hover {
+                border-color: #3b82f6;
+            }
+
+            .stat-card-dash.green:hover {
+                border-color: #10b981;
+            }
+
+            .stat-card-dash.red:hover {
+                border-color: #ef4444;
+            }
+
+            .bus-card.status-scheduled { border-top-color: #0ea5e9; }
+            .status-badge.scheduled { background: #e0f2fe; color: #0284c7; }
+    </style>
+
+    <div class="buses-view-container">
+
+        <div class="animate-item delay-1">
+            <h2 class="page-header-title">
+                <i class="fas fa-bus" style="color: #3b82f6;"></i> All Fleet & Buses
+            </h2>
+            <p class="page-header-subtitle">Administrative view — manage fleet vehicles</p>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stats-row animate-item delay-2">
+            <div class="stat-card-dash blue">
+                <div class="stat-icon-dash"><i class="fas fa-bus"></i></div>
+                <div class="stat-details-dash">
+                    <div class="value">@ViewBag.TotalBuses</div>
+                    <div class="label">Total Fleet Size</div>
+                </div>
+            </div>
+            <div class="stat-card-dash green">
+                <div class="stat-icon-dash"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-details-dash">
+                    <div class="value">@ViewBag.AvailableBuses</div>
+                    <div class="label">Available / Standby</div>
+                </div>
+            </div>
+            <div class="stat-card-dash red">
+                <div class="stat-icon-dash"><i class="fas fa-tools"></i></div>
+                <div class="stat-details-dash">
+                    <div class="value">@ViewBag.MaintenanceBuses</div>
+                    <div class="label">In Maintenance</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Container -->
+        <div class="filter-container-card animate-item delay-3">
+            <div class="search-wrap-dash">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchBus" placeholder="Search plate, body no..." onkeyup="filterBuses()">
+            </div>
+
+            <select id="filterType" class="filter-select-dash" onchange="filterBuses()">
+                <option value="">All Types</option>
+                <option value="AC">Aircon (AC)</option>
+                <option value="OR">Ordinary (OR)</option>
+            </select>
+
+            <select id="filterStatus" class="filter-select-dash" onchange="filterBuses()">
+                <option value="">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="In Transit">In Transit</option>
+                <option value="Maintenance">Maintenance</option>
+            </select>
+
+            <select id="filterCondition" class="filter-select-dash" onchange="filterBuses()">
+                <option value="">All Conditions</option>
+                <option value="Good">Good</option>
+                <option value="Maintenance">Maintenance</option>
+            </select>
+
+            <button class="btn-dash btn-dash-reset" onclick="clearFilters()">
+                <i class="fas fa-sync-alt"></i> Reset
+            </button>
+
+            <div style="flex-grow: 1;"></div>
+
+        @if (isAdmin)
+        {
+            <!-- New Red Archive All Button -->
+            <button class="btn-dash btn-dash-danger" onclick="openModalSafe('archiveModal')">
+                <i class="fas fa-archive"></i> Archive All
+            </button>
+
+            <button class="btn-dash btn-dash-primary" onclick="openAddModal()">
+                <i class="fas fa-plus-circle"></i> Add New Bus
+            </button>
+        }
+        </div>
+
+        <!-- 3x3 Grid Layout -->
+        <div class="buses-grid animate-item delay-4" id="busGridBody">
+            @if (ViewBag.Buses != null && ((List<PUBReservationSystem.Models.Bus>)ViewBag.Buses).Count > 0)
+            {
+                @foreach (var bus in (List<PUBReservationSystem.Models.Bus>)ViewBag.Buses)
+                {
+                // 1. Trust the Status coming from the Backend (Scheduled, In Transit, Available)
+                string displayStatus = bus.Status;
+
+                // 2. Fallback: If it says Available but condition is bad, force Maintenance
+                if (displayStatus == "Available" && bus.Bus_Condition == "Maintenance")
+                {
+                    displayStatus = "Maintenance";
+                }
+
+                var statusClass = (displayStatus == "Available") ? "status-available" :
+                (displayStatus == "Scheduled") ? "status-scheduled" :
+                (displayStatus == "In Transit") ? "status-in-transit" : "status-maintenance";
+
+                var badgeClass = (displayStatus == "Available") ? "available" :
+                (displayStatus == "Scheduled") ? "scheduled" :
+                (displayStatus == "In Transit") ? "in-transit" : "maintenance";
+
+                var badgeIcon = (displayStatus == "Available") ? "fa-check-circle" :
+                (displayStatus == "Scheduled") ? "fa-calendar-alt" :
+                (displayStatus == "In Transit") ? "fa-route" : "fa-tools";
+
+                    <!-- Assume Bus_Type defaults to "OR" if null -->
+                    var busType = string.IsNullOrEmpty(bus.Bus_Type) ? "OR" : bus.Bus_Type;
+                    var typeClass = busType == "AC" ? "ac" : "or";
+
+                    <!-- Add the id="card-@bus.Bus_ID" here -->
+                    <div class="bus-card @statusClass"
+                         id="card-@bus.Bus_ID"
+                         data-plate="@bus.Plate_Number.ToLower()"
+                         data-body="@bus.Body_Bus_Number.ToLower()"
+                         data-name="@(bus.Bus_Name != null ? bus.Bus_Name.ToLower() : "")"
+                         data-status="@bus.Status"
+                         data-condition="@bus.Bus_Condition"
+                         data-type="@busType">
+
+                        <div class="bus-card-header">
+                            <div>
+                                <h3 class="bus-card-title">@(bus.Bus_Name ?? "Unnamed Bus")</h3>
+                                <span class="bus-card-id">ID: @bus.Bus_ID</span>
+                            </div>
+                            <span class="status-badge @badgeClass"><i class="fas @badgeIcon"></i> @displayStatus</span>
+                        </div>
+
+                        <div class="bus-card-body">
+                            <div class="bus-detail-row">
+                                <span class="bus-detail-label">Plate No.</span>
+                                <span class="bus-detail-value">@bus.Plate_Number</span>
+                            </div>
+                            <div class="bus-detail-row">
+                                <span class="bus-detail-label">Body No.</span>
+                                <span class="bus-detail-value">@bus.Body_Bus_Number</span>
+                            </div>
+                            <!-- NEW ROW ADDED HERE -->
+                            <div class="bus-detail-row">
+                                <span class="bus-detail-label">Bus Type</span>
+                                <span class="bus-detail-value">@(busType == "AC" ? "Aircon (AC)" : "Ordinary (OR)")</span>
+                            </div>
+                            <div class="bus-detail-row">
+                                <span class="bus-detail-label">Condition</span>
+                                <span class="bus-detail-value @(bus.Bus_Condition == "Good" ? "good" : "maint")">
+                                    @(string.IsNullOrEmpty(bus.Bus_Condition) ? "Good" : bus.Bus_Condition)
+                                </span>
+                            </div>
+                        </div>
+
+                    @if (isAdmin)
+                    {
+                        <div class="bus-card-footer">
+                            <button class="btn-action-card btn-action-edit" onclick="editBus('@bus.Bus_ID')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <!-- Replaced Delete with Archive -->
+                            <button class="btn-action-card btn-action-delete" onclick="archiveBus('@bus.Bus_ID', '@bus.Plate_Number')">
+                                <i class="fas fa-archive"></i> Archive
+                            </button>
+                        </div>
+                    }
+                </div>
+                }
+            }
+            else
+            {
+                <div id="emptyStateContainer" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #94a3b8; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <i class="fas fa-bus" style="font-size: 48px; color: #e2e8f0; margin-bottom: 16px;"></i>
+                    <p style="margin:0; font-size: 15px; font-weight: 500;">No buses found in the fleet registry.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="sys-modal-overlay" id="archiveModal">
+        <div class="sys-modal modal-sm">
+            <div class="modal-body-sys modal-body-center">
+                <div class="modal-icon-danger">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <h3 class="modal-title-center">Archive All Buses</h3>
+                <p class="modal-subtitle-center">Are you sure? This will move all current buses out of the active registry and into the Archive page.</p>
+            </div>
+            <div class="modal-footer-sys modal-footer-center">
+                <button class="btn-ghost-sys" onclick="closeModalSafe('archiveModal')">Cancel</button>
+                <button class="btn-danger-sys" onclick="confirmArchiveAll()">
+                    <i class="fas fa-archive"></i> Archive All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sys-modal-overlay" id="archiveSingleModal">
+        <div class="sys-modal modal-sm">
+            <div class="modal-body-sys modal-body-center">
+                <div class="modal-icon-danger">
+                    <i class="fas fa-archive"></i>
+                </div>
+                <h3 class="modal-title-center">Archive Bus</h3>
+                <p class="modal-subtitle-center">Are you sure you want to move this bus to the archive?</p>
+
+                <div class="modal-highlight-box">
+                    <span id="archiveBusPlate" class="modal-highlight-text"></span>
+                </div>
+                <input type="hidden" id="archiveBusId">
+            </div>
+            <div class="modal-footer-sys modal-footer-center">
+                <button class="btn-ghost-sys" onclick="closeModalSafe('archiveSingleModal')">Cancel</button>
+                <button class="btn-danger-sys" onclick="confirmArchiveSingle()">Yes, Archive</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bus Modal -->
+    <div class="sys-modal-overlay" id="addBusModal">
+        <div class="sys-modal">
+            <div class="modal-header-sys">
+                <h3 class="modal-title-sys"><i class="fas fa-plus-circle" style="color: #3b6cf7; margin-right: 8px;"></i> Add New Bus</h3>
+                <button class="modal-close-sys" onclick="closeModalSafe('addBusModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body-sys">
+                <div class="form-grid-2">
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Plate Number</label>
+                        <input type="text" id="plateNumber" class="form-control-sys" placeholder="e.g., ABC-123" maxlength="8" onkeyup="formatPlateNumber(this)">
+                    </div>
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Body Number</label>
+                        <input type="text" id="bodyBusNumber" class="form-control-sys" placeholder="e.g., BODY-001" style="text-transform:uppercase;">
+                    </div>
+                </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys">Bus Name / Brand (Optional)</label>
+                    <input type="text" id="busName" class="form-control-sys" placeholder="e.g., Victory Liner">
+                </div>
+
+                <div class="form-grid-2">
+                    <!-- NEW: Bus Type Input -->
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Bus Type</label>
+                        <select id="busTypeInput" class="form-control-sys">
+                            <option value="AC">Aircon (AC)</option>
+                            <option value="OR">Ordinary (OR)</option>
+                        </select>
+                    </div>
+
+                    <!-- UPDATED: Condition Input -->
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Condition</label>
+                        <select id="condition" class="form-control-sys">
+                            <option value="Good">Good</option>
+                            <option value="Maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-sys">
+                <button class="btn-ghost-sys" onclick="closeModalSafe('addBusModal')">Cancel</button>
+                <button class="btn-primary-sys" onclick="saveBus()"><i class="fas fa-save"></i> Save Bus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Bus Modal -->
+    <div class="sys-modal-overlay" id="editBusModal">
+        <div class="sys-modal">
+            <div class="modal-header-sys">
+                <h3 class="modal-title-sys"><i class="fas fa-edit" style="color: #475569; margin-right: 8px;"></i> Edit Bus Details</h3>
+                <button class="modal-close-sys" onclick="closeModalSafe('editBusModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body-sys">
+                <input type="hidden" id="editBusId"> <!-- Hidden ID -->
+
+                <div class="form-grid-2">
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Plate Number</label>
+                        <input type="text" id="editPlateNumber" class="form-control-sys" maxlength="8" onkeyup="formatPlateNumber(this)">
+                    </div>
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Body Number</label>
+                        <input type="text" id="editBodyBusNumber" class="form-control-sys" style="text-transform:uppercase;">
+                    </div>
+                </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys">Bus Name / Brand</label>
+                    <input type="text" id="editBusName" class="form-control-sys">
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Bus Type</label>
+                        <select id="editBusTypeInput" class="form-control-sys">
+                            <option value="AC">Aircon (AC)</option>
+                            <option value="OR">Ordinary (OR)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">Condition</label>
+                        <select id="editCondition" class="form-control-sys">
+                            <option value="Good">Good</option>
+                            <option value="Maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-sys">
+                <button class="btn-ghost-sys" onclick="closeModalSafe('editBusModal')">Cancel</button>
+                <button class="btn-primary-sys" onclick="updateBus()"><i class="fas fa-save"></i> Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal (Unchanged structurally) -->
+    <div class="sys-modal-overlay" id="deleteModal">
+        <div class="sys-modal modal-sm" style="text-align: center;">
+            <div class="modal-body-sys" style="padding-top: 32px;">
+                <div style="width: 72px; height: 72px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 32px; color: #ef4444;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 style="font-size: 20px; font-weight: 800; color: var(--navy-900, #0f1c3f); margin-bottom: 8px;">Delete Bus</h3>
+                <p style="color: #64748b; font-size: 14.5px; margin-bottom: 16px;">Are you sure you want to delete this bus from the fleet?</p>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    <strong id="deleteBusPlate" style="font-size: 18px; color: var(--navy-800, #1e293b); letter-spacing: 1px;"></strong>
+                </div>
+                <p style="font-size: 13px; color: #ef4444; font-weight: 600;">This action cannot be undone.</p>
+                <input type="hidden" id="deleteBusId">
+            </div>
+            <div class="modal-footer-sys" style="justify-content: center; padding-bottom: 32px; border-top: none;">
+                <button class="btn-ghost-sys" onclick="closeModalSafe('deleteModal')">Cancel</button>
+                <button class="btn-danger-sys" onclick="confirmDelete()">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+
+            window.closeModal = window.closeModalSafe;
+            window.openModal = window.openModalSafe;
+            /* ==========================================================
+               1. STRICT INPUT FORMATTERS & VALIDATORS
+               ========================================================== */
+            window.formatPlateNumber = function(input) {
+                // Forces format: 3 Letters, Dash, 3-4 Numbers (AAA-000)
+                let val = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                let letters = val.substring(0, 3).replace(/[^A-Z]/g, '');
+                let numbers = val.substring(letters.length, 7).replace(/[^0-9]/g, '');
+
+                if (val.length > letters.length) {
+                    input.value = letters + '-' + numbers;
+                } else {
+                    input.value = letters;
+                }
+            };
+
+            window.formatBodyNumber = function(input) {
+                // Forces all caps for body numbers
+                input.value = input.value.toUpperCase();
+            };
+
+            window.formatBusName = function(input) {
+                // Forces letters/spaces only, and Capitalizes Every Word (Title Case)
+                let val = input.value.replace(/[^a-zA-Z\s]/g, '');
+                val = val.replace(/\b\w/g, char => char.toUpperCase());
+                input.value = val;
+            };
+
+            // Automatically attach formatters to inputs as the user types
+            document.addEventListener('DOMContentLoaded', function() {
+                ['plateNumber', 'editPlateNumber'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el) el.addEventListener('input', function() { formatPlateNumber(this); });
+                });
+                ['bodyBusNumber', 'editBodyBusNumber'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el) el.addEventListener('input', function() { formatBodyNumber(this); });
+                });
+                ['busName', 'editBusName'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el) el.addEventListener('input', function() { formatBusName(this); });
+                });
+            });
+
+            // --- ARCHIVE SINGLE LOGIC ---
+            window.archiveBus = function(busId, plateNumber) {
+                document.getElementById('archiveBusId').value = busId;
+                document.getElementById('archiveBusPlate').textContent = plateNumber.toUpperCase();
+                openModalSafe('archiveSingleModal');
+            };
+
+            // --- ARCHIVE SINGLE LOGIC ---
+        window.confirmArchiveSingle = function() {
+            var busId = document.getElementById('archiveBusId').value;
+            var archiveBtn = document.querySelector('#archiveSingleModal .btn-danger-sys');
+            if (archiveBtn) { archiveBtn.disabled = true; archiveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Archiving...'; }
+
+            fetch('/Home/ArchiveBus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'busId=' + encodeURIComponent(busId)
+            }).then(response => response.json()).then(data => {
+                closeModalSafe('archiveSingleModal');
+                if (data.success) {
+                    showToast(data.message, 'success');
+
+                    // --- DYNAMIC UI UPDATE (NO RELOAD) ---
+                    var card = document.getElementById('card-' + busId);
+                    if (card) {
+                        // 1. Check status to decrement correct stat counter
+                        let rawStatus = card.getAttribute('data-status') || "";
+                        let rawCondition = card.getAttribute('data-condition') || "";
+                        let effectiveStatus = (rawStatus === 'In Transit') ? 'In Transit' :
+                                              (rawCondition === 'Maintenance' ? 'Maintenance' : 'Available');
+
+                        let totalEl = document.querySelector('.stat-card-dash.blue .value');
+                        if (totalEl) totalEl.textContent = Math.max(0, parseInt(totalEl.textContent) - 1);
+
+                        if (effectiveStatus === 'Available') {
+                            let availEl = document.querySelector('.stat-card-dash.green .value');
+                            if (availEl) availEl.textContent = Math.max(0, parseInt(availEl.textContent) - 1);
+                        } else if (effectiveStatus === 'Maintenance') {
+                            let maintEl = document.querySelector('.stat-card-dash.red .value');
+                            if (maintEl) maintEl.textContent = Math.max(0, parseInt(maintEl.textContent) - 1);
+                        }
+
+                        // 2. Animate out and remove
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.9)';
+
+                        setTimeout(() => {
+                            card.remove();
+                            // If grid is empty, trigger filter to show "No buses found"
+                            if (document.querySelectorAll('.bus-card').length === 0) {
+                                filterBuses();
+                            }
+                        }, 300);
+                    }
+                }
+                else { showToast(data.message, 'error'); }
+            }).catch(error => { showToast('Network error while archiving.', 'error'); })
+            .finally(() => { if (archiveBtn) { archiveBtn.disabled = false; archiveBtn.innerHTML = 'Yes, Archive'; } });
+        };
+
+            // --- ARCHIVE ALL LOGIC ---
+        window.confirmArchiveAll = function() {
+            var archiveAllBtn = document.querySelector('#archiveModal .btn-danger-sys');
+            if (archiveAllBtn) { archiveAllBtn.disabled = true; archiveAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Archiving...'; }
+
+            fetch('/Home/ArchiveAllBuses', {
+                method: 'POST'
+            }).then(response => response.json()).then(data => {
+                closeModalSafe('archiveModal');
+                if (data.success) {
+                    showToast(data.message, 'success');
+
+                    // --- DYNAMIC UI UPDATE (NO RELOAD) ---
+                    // 1. Reset all stat counters to 0
+                    let totalEl = document.querySelector('.stat-card-dash.blue .value');
+                    let availEl = document.querySelector('.stat-card-dash.green .value');
+                    let maintEl = document.querySelector('.stat-card-dash.red .value');
+
+                    if (totalEl) totalEl.textContent = '0';
+                    if (availEl) availEl.textContent = '0';
+                    if (maintEl) maintEl.textContent = '0';
+
+                    // 2. Animate all cards out
+                    const cards = document.querySelectorAll('.bus-card');
+                    cards.forEach(card => {
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.9)';
+                    });
+
+                    // 3. Remove them from DOM and show empty state
+                    setTimeout(() => {
+                        cards.forEach(card => card.remove());
+                        filterBuses(); // Triggers empty state
+                    }, 300);
+                }
+                else { showToast(data.message, 'error'); }
+            }).catch(error => { showToast('Network error.', 'error'); })
+            .finally(() => { if (archiveAllBtn) { archiveAllBtn.disabled = false; archiveAllBtn.innerHTML = '<i class="fas fa-archive"></i> Archive All'; } });
+        };
+
+                    window.confirmArchive = function() {
+                // You will link this to your C# backend later.
+                // For now, it closes the modal and shows a success toast.
+                closeModalSafe('archiveModal');
+                showToast('Buses successfully moved to Archive.', 'success');
+
+                // Optional: setTimeout(() => location.reload(), 1500);
+            };
+
+
+            /* ==========================================================
+               2. SAFE MODAL CONTROLLERS (Blocks scrolling & clicking outside)
+               ========================================================== */
+            window.openModalSafe = function(modalId) {
+                var modal = document.getElementById(modalId);
+                if(modal) {
+                    modal.classList.add('active-modal');
+                    document.body.classList.add('modal-open'); // Locks scroll
+                }
+            };
+
+            window.closeModalSafe = function(modalId) {
+                var modal = document.getElementById(modalId);
+                if(modal) {
+                    modal.classList.remove('active-modal');
+                    document.body.classList.remove('modal-open'); // Unlocks scroll
+                }
+            };
+
+            // UX: Shake the modal if they click outside instead of closing it
+            document.querySelectorAll('.sys-modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        const modalBox = this.querySelector('.sys-modal');
+                        if(modalBox) {
+                            modalBox.classList.remove('shake-alert');
+                            void modalBox.offsetWidth; // Trigger DOM reflow
+                            modalBox.classList.add('shake-alert');
+                        }
+                    }
+                });
+            });
+
+
+            /* ==========================================================
+               3. CORE CRUD OPERATIONS (Add, Edit, Delete)
+               ========================================================== */
+            window.openAddModal = function() {
+                document.getElementById('plateNumber').value = '';
+                document.getElementById('bodyBusNumber').value = '';
+                document.getElementById('busName').value = '';
+                document.getElementById('busTypeInput').value = 'AC';
+                document.getElementById('condition').value = 'Good';
+                openModalSafe('addBusModal');
+            };
+
+                    window.saveBus = function() {
+            var plate = document.getElementById('plateNumber').value.trim();
+            var body = document.getElementById('bodyBusNumber').value.trim();
+            var name = document.getElementById('busName').value.trim();
+            var busTypeVal = document.getElementById('busTypeInput').value;
+            var cond = document.getElementById('condition').value;
+
+            // Final Validation Check
+            const plateRegex = /^[A-Z]{3}-\d{3,4}$/;
+            if (!plateRegex.test(plate.toUpperCase())) {
+                showToast('Invalid Plate! Must be AAA-000 format.', 'error');
+                return;
+            }
+            if (!body) {
+                showToast('Body Number is required.', 'error');
+                return;
+            }
+
+            var saveBtn = document.querySelector('#addBusModal .btn-primary-sys');
+            if (saveBtn) saveBtn.disabled = true;
+
+            fetch('/Home/SaveBus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'plateNumber=' + encodeURIComponent(plate) +
+                      '&bodyBusNumber=' + encodeURIComponent(body) +
+                      '&busName=' + encodeURIComponent(name) +
+                      '&bus_Type=' + encodeURIComponent(busTypeVal) +
+                      '&condition=' + encodeURIComponent(cond)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeModalSafe('addBusModal');
+                    showToast('Bus added successfully!', 'success');
+
+                    // --- THE JAVASCRIPT FIX ---
+                    // Because C# didn't return data.data, we build the bus object locally
+                    // using the exact inputs you just typed into the modal!
+                    const bus = {
+                        bus_ID: "NEW", // The real ID is in the database; this is a UI placeholder
+                        plate_Number: plate.toUpperCase(),
+                        body_Bus_Number: body.toUpperCase(),
+                        bus_Name: name || 'Unnamed Bus',
+                        bus_Condition: cond,
+                        bus_Type: busTypeVal,
+                        // Fix the logic here so "Good" maps to "Available"
+                        status: (cond === "Good" || cond === "Road Worthy") ? "Available" : "Maintenance"
+                    };
+
+                    const grid = document.getElementById('busGridBody');
+
+                    // 1. Update Stat Counters Dynamically
+                    let totalEl = document.querySelector('.stat-card-dash.blue .value') || document.querySelector('.sys-card:nth-child(1) h2');
+                    if (totalEl) totalEl.textContent = parseInt(totalEl.textContent) + 1;
+
+                    if (bus.status === 'Available') {
+                        let availEl = document.querySelector('.stat-card-dash.green .value') || document.querySelector('.sys-card:nth-child(2) h2');
+                        if (availEl) availEl.textContent = parseInt(availEl.textContent) + 1;
+                    } else if (bus.status === 'Maintenance') {
+                        let maintEl = document.querySelector('.stat-card-dash.red .value') || document.querySelector('.sys-card:nth-child(3) h2');
+                        if (maintEl) maintEl.textContent = parseInt(maintEl.textContent) + 1;
+                    }
+
+                    // 2. Setup Variables for the new Card
+                    let statusClass = "status-maintenance"; let badgeClass = "maintenance"; let badgeIcon = "fa-tools";
+                    if(bus.status === "Available") { statusClass = "status-available"; badgeClass = "available"; badgeIcon = "fa-check-circle"; }
+                    else if(bus.status === "In Transit") { statusClass = "status-in-transit"; badgeClass = "in-transit"; badgeIcon = "fa-route"; }
+
+                    const finalType = bus.bus_Type;
+                    const condClass = bus.bus_Condition === "Good" ? "good" : "maint";
+
+                    // 3. Generate HTML with New Design & Slide Animation
+                    const newCard = `
+                        <div class="bus-card ${statusClass} card-update-slide"
+                             id="card-new"
+                             data-plate="${bus.plate_Number.toLowerCase()}"
+                             data-body="${bus.body_Bus_Number.toLowerCase()}"
+                             data-name="${bus.bus_Name.toLowerCase()}"
+                             data-status="${bus.status}"
+                             data-condition="${bus.bus_Condition}"
+                             data-type="${finalType}">
+
+                            <div class="bus-card-header">
+                                <div>
+                                    <h3 class="bus-card-title">${bus.bus_Name}</h3>
+                                    <span class="bus-card-id">ID: Pending <small style="color:#94a3b8; font-size:10px;">(Refresh to sync ID)</small></span>
+                                </div>
+                                <span class="status-badge ${badgeClass}"><i class="fas ${badgeIcon}"></i> ${bus.status}</span>
+                            </div>
+
+                            <div class="bus-card-body">
+                                <div class="bus-detail-row">
+                                    <span class="bus-detail-label">Plate No.</span>
+                                    <span class="bus-detail-value">${bus.plate_Number}</span>
+                                </div>
+                                <div class="bus-detail-row">
+                                    <span class="bus-detail-label">Body No.</span>
+                                    <span class="bus-detail-value">${bus.body_Bus_Number}</span>
+                                </div>
+                                <div class="bus-detail-row">
+                                    <span class="bus-detail-label">Bus Type</span>
+                                    <span class="bus-detail-value">${finalType === 'AC' ? 'Aircon (AC)' : 'Ordinary (OR)'}</span>
+                                </div>
+                                <div class="bus-detail-row">
+                                    <span class="bus-detail-label">Condition</span>
+                                    <span class="bus-detail-value ${condClass}">${bus.bus_Condition}</span>
+                                </div>
+                            </div>
+
+                            <div class="bus-card-footer">
+                                <button class="btn-action-card btn-action-edit" disabled title="Refresh page to edit">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn-action-card btn-action-delete" disabled title="Refresh page to delete">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    // 4. Remove empty state if it exists, and inject the card
+                    const emptyState = document.getElementById('emptyStateContainer');
+                    if (emptyState) emptyState.remove();
+
+                    if (grid) {
+                        grid.insertAdjacentHTML('afterbegin', newCard);
+                    } else {
+                        // Failsafe: if the grid isn't found, just reload the page
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+
+                } else { showToast(data.message, 'error'); }
+            })
+            .catch(err => { showToast('Connection failed.', 'error'); console.error(err); })
+            .finally(() => { if (saveBtn) saveBtn.disabled = false; });
+        };
+
+            // --- EDIT LOGIC ---
+            window.editBus = function(busId) {
+                var card = document.getElementById('card-' + busId);
+                if(!card) return;
+
+                document.getElementById('editBusId').value = busId;
+                document.getElementById('editPlateNumber').value = card.getAttribute('data-plate').toUpperCase();
+                document.getElementById('editBodyBusNumber').value = card.getAttribute('data-body').toUpperCase();
+
+                // Format name nicely
+                let busName = card.getAttribute('data-name') || '';
+                document.getElementById('editBusName').value = busName.replace(/\b\w/g, c => c.toUpperCase());
+
+                document.getElementById('editBusTypeInput').value = card.getAttribute('data-type');
+                document.getElementById('editCondition').value = card.getAttribute('data-condition');
+
+                openModalSafe('editBusModal');
+            };
+
+                    window.updateBus = function() {
+            var busId = document.getElementById('editBusId').value;
+            var plate = document.getElementById('editPlateNumber').value.trim();
+            var body = document.getElementById('editBodyBusNumber').value.trim();
+            var name = document.getElementById('editBusName').value.trim();
+            var type = document.getElementById('editBusTypeInput').value;
+            var cond = document.getElementById('editCondition').value;
+
+            // Grab the existing status silently from the card
+            var cardElement = document.getElementById('card-' + busId);
+            var oldStatus = cardElement ? cardElement.getAttribute('data-status') : 'Available';
+
+            // Final Validation Check
+            const plateRegex = /^[A-Z]{3}-\d{3,4}$/;
+            if (!plateRegex.test(plate.toUpperCase())) { showToast('Invalid Plate! Must be AAA-000 format.', 'error'); return; }
+            if (!body) { showToast('Body Number is required.', 'error'); return; }
+
+            var saveBtn = document.querySelector('#editBusModal .btn-primary-sys');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            fetch('/Home/EditBus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'Bus_ID=' + encodeURIComponent(busId) +
+                      '&Plate_Number=' + encodeURIComponent(plate) +
+                      '&Body_Bus_Number=' + encodeURIComponent(body) +
+                      '&Bus_Name=' + encodeURIComponent(name) +
+                      '&Bus_Type=' + encodeURIComponent(type) +
+                      '&Bus_Condition=' + encodeURIComponent(cond) +
+                      '&Status=' + encodeURIComponent(oldStatus)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeModalSafe('editBusModal');
+                    showToast('Bus updated successfully!', 'success');
+
+                    try {
+                        var card = document.getElementById('card-' + busId);
+                        if (card) {
+                            // 1. Update Data Attributes
+                            card.setAttribute('data-plate', plate.toLowerCase());
+                            card.setAttribute('data-body', body.toLowerCase());
+                            card.setAttribute('data-name', name.toLowerCase());
+                            card.setAttribute('data-type', type);
+                            card.setAttribute('data-condition', cond);
+
+                            // 2. Update Header
+                            let titleEl = card.querySelector('.bus-card-title');
+                            if(titleEl) titleEl.textContent = name || 'Unnamed Bus';
+
+                            // 3. Update Detail Rows
+                            let details = card.querySelectorAll('.bus-detail-value');
+                            if (details.length >= 4) {
+                                details[0].textContent = plate;
+                                details[1].textContent = body;
+                                details[2].textContent = type === 'AC' ? 'Aircon (AC)' : 'Ordinary (OR)';
+                                details[3].textContent = cond;
+                                details[3].className = `bus-detail-value ${cond === 'Good' ? 'good' : 'maint'}`;
+                            }
+
+                            // 4. Update Delete Button Plate Param
+                            let deleteBtn = card.querySelector('.btn-action-delete');
+                            if(deleteBtn) deleteBtn.setAttribute('onclick', `deleteBus('${busId}', '${plate}')`);
+
+                            // --- START DYNAMIC BADGE, BORDER, & STAT UPDATE ---
+                            // Recalculate status based on NEW condition
+                            let newEffectiveStatus = (oldStatus === 'In Transit') ? 'In Transit' :
+                                                     (cond === 'Maintenance' ? 'Maintenance' : 'Available');
+
+                            // ==========================================
+                            // THE NEW FIX: DYNAMIC STAT CARD MATH
+                            // ==========================================
+                            if (oldStatus !== newEffectiveStatus) {
+                                // Find the stat elements
+                                let availEl = document.querySelector('.stat-card-dash.green .value') || document.querySelector('.sys-card:nth-child(2) h2');
+                                let maintEl = document.querySelector('.stat-card-dash.red .value') || document.querySelector('.sys-card:nth-child(3) h2');
+
+                                // Remove 1 from the old status
+                                if (oldStatus === 'Available' && availEl) availEl.textContent = parseInt(availEl.textContent) - 1;
+                                if (oldStatus === 'Maintenance' && maintEl) maintEl.textContent = parseInt(maintEl.textContent) - 1;
+
+                                // Add 1 to the new status
+                                if (newEffectiveStatus === 'Available' && availEl) availEl.textContent = parseInt(availEl.textContent) + 1;
+                                if (newEffectiveStatus === 'Maintenance' && maintEl) maintEl.textContent = parseInt(maintEl.textContent) + 1;
+
+                                // VERY IMPORTANT: Update the data-status attribute so future edits know the new state!
+                                card.setAttribute('data-status', newEffectiveStatus);
+                            }
+                            // ==========================================
+
+                            let newStatusClass = (newEffectiveStatus === 'Available') ? 'status-available' :
+                                                 (newEffectiveStatus === 'In Transit') ? 'status-in-transit' : 'status-maintenance';
+
+                            let newBadgeClass = (newEffectiveStatus === 'Available') ? 'available' :
+                                                (newEffectiveStatus === 'In Transit') ? 'in-transit' : 'maintenance';
+
+                            let newIcon = (newEffectiveStatus === 'Available') ? 'fa-check-circle' :
+                                          (newEffectiveStatus === 'In Transit') ? 'fa-route' : 'fa-tools';
+
+                            // Update Border
+                            card.classList.remove('status-available', 'status-in-transit', 'status-maintenance');
+                            card.classList.add(newStatusClass);
+
+                            // Update Badge
+                            let badgeEl = card.querySelector('.status-badge');
+                            if (badgeEl) {
+                                badgeEl.className = `status-badge ${newBadgeClass}`;
+                                badgeEl.innerHTML = `<i class="fas ${newIcon}"></i> ${newEffectiveStatus}`;
+                            }
+                            // --- END DYNAMIC BADGE & BORDER UPDATE ---
+
+                            // 5. Trigger the Slide Animation
+                            card.classList.remove('newly-added-card', 'card-update-slide');
+                            void card.offsetWidth;
+                            card.classList.add('card-update-slide');
+                        }
+                    } catch (domError) {
+                        console.error("Card Update Error:", domError);
+                        setTimeout(() => location.reload(), 800);
+                    }
+                } else { showToast(data.message, 'error'); }
+            })
+            .catch(err => {
+                console.error("Network Error:", err);
+                showToast('Connection failed.', 'error');
+            })
+            .finally(() => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            });
+        };
+
+            // --- DELETE LOGIC ---
+            window.deleteBus = function(busId, plateNumber) {
+                document.getElementById('deleteBusId').value = busId;
+                document.getElementById('deleteBusPlate').textContent = plateNumber.toUpperCase();
+                openModalSafe('deleteModal');
+            };
+
+            window.confirmDelete = function() {
+                var busId = document.getElementById('deleteBusId').value;
+                var deleteBtn = document.querySelector('#deleteModal .btn-danger-sys');
+                if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...'; }
+
+                fetch('/Home/DeleteBus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'busId=' + encodeURIComponent(busId)
+                }).then(response => response.json()).then(data => {
+                    closeModalSafe('deleteModal');
+                    if (data.success) { showToast(data.message, 'success'); setTimeout(() => location.reload(), 1500); }
+                    else { showToast(data.message, 'error'); }
+                }).catch(error => { showToast('Network error while deleting.', 'error'); })
+                .finally(() => { if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.innerHTML = 'Yes, Delete'; } });
+            };
+
+
+            /* ==========================================================
+               4. FILTERING SYSTEM
+               ========================================================== */
+                    window.filterBuses = function() {
+                var search = document.getElementById('searchBus').value.toLowerCase().trim();
+                var type = document.getElementById('filterType').value;
+                var statusFilter = document.getElementById('filterStatus').value;
+                var conditionFilter = document.getElementById('filterCondition').value;
+
+                var cards = document.querySelectorAll('.bus-card');
+                var visibleCount = 0;
+
+                cards.forEach(function(card) {
+                    var plate = (card.getAttribute('data-plate') || "").toLowerCase();
+                    var body = (card.getAttribute('data-body') || "").toLowerCase();
+                    var name = (card.getAttribute('data-name') || "").toLowerCase();
+                    var cardType = card.getAttribute('data-type') || "";
+
+                    // 1. Get raw data from attributes
+                    var rawStatus = card.getAttribute('data-status') || "";
+                    var rawCondition = card.getAttribute('data-condition') || "";
+
+                            // 2. REPLICATE THE UI LOGIC (The "Effective Status")
+        var effectiveStatus = (rawStatus === 'In Transit' || rawStatus === 'Scheduled') ? rawStatus :
+                              (rawCondition === 'Maintenance' ? 'Maintenance' : 'Available');
+
+                    // 3. Perform Match Checks
+                    var matchesSearch = plate.includes(search) || body.includes(search) || name.includes(search);
+                    var matchesType = !type || cardType === type;
+
+                    // Match against the "Effective" status, not the raw database status
+                    var matchesStatus = !statusFilter || effectiveStatus === statusFilter;
+
+                    // Match against raw condition
+                    var matchesCondition = !conditionFilter || rawCondition === conditionFilter;
+
+                    if (matchesSearch && matchesType && matchesStatus && matchesCondition) {
+                        card.classList.remove('hidden');
+                        setTimeout(() => card.classList.remove('filtering-out'), 10);
+                        visibleCount++;
+                    } else {
+                        card.classList.add('filtering-out');
+                        setTimeout(() => { if (card.classList.contains('filtering-out')) card.classList.add('hidden'); }, 300);
+                    }
+                });
+
+                // ... (Keep your empty state logic exactly as it is)
+                setTimeout(() => {
+                    let emptyState = document.getElementById('emptyStateContainer');
+                    if (visibleCount === 0 && !emptyState) {
+                        const grid = document.getElementById('busGridBody');
+                        grid.insertAdjacentHTML('beforeend', `
+                            <div id="emptyStateContainer" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #94a3b8; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; animation: fadeSlideUp 0.3s forwards;">
+                                <i class="fas fa-search" style="font-size: 40px; color: #e2e8f0; margin-bottom: 16px;"></i>
+                                <p style="margin:0; font-size: 15px; font-weight: 500;">No buses match your filters.</p>
+                            </div>
+                        `);
+                    } else if (visibleCount > 0 && emptyState) {
+                        emptyState.remove();
+                    }
+                }, 300);
+            };
+
+            window.clearFilters = function() {
+                // 1. Trigger the animation
+                var icon = document.querySelector('.btn-dash-reset i');
+                if (icon) {
+                    icon.classList.add('spin-active');
+                }
+
+                // 2. Perform the reset
+                document.getElementById('searchBus').value = '';
+                document.getElementById('filterType').value = '';
+                document.getElementById('filterStatus').value = '';
+                document.getElementById('filterCondition').value = '';
+
+                filterBuses();
+                showToast('Filters have been reset.', 'success');
+
+                // 3. Remove the animation class after it finishes (0.6s)
+                setTimeout(() => {
+                    if (icon) icon.classList.remove('spin-active');
+                }, 600);
+            };
+        </script>
+    }

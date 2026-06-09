@@ -1,0 +1,160 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create User Account</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background: #f0f2f5;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #1a237e;
+            color: white;
+            height: 100vh;
+            padding: 20px;
+        }
+
+            .sidebar a {
+                color: white;
+                text-decoration: none;
+                display: block;
+                padding: 12px;
+                margin-bottom: 5px;
+                border-radius: 5px;
+            }
+
+                .sidebar a:hover {
+                    background: #283593;
+                }
+
+        .main {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+
+        h2 {
+            color: #1a237e;
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background: #283593;
+            }
+
+        .back-link {
+            display: block;
+            margin-top: 15px;
+            text-align: center;
+            color: #1a237e;
+            text-decoration: none;
+        }
+
+        body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        body::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
+
+            body::-webkit-scrollbar-thumb:hover {
+                background: #bbb;
+            }
+    </style>
+</head>
+<body>
+    <div class="sidebar-nav">
+        <a href="/Home" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
+
+        @if (ViewBag.Role == "Admin" || ViewBag.Role == "HeadTeller" || ViewBag.Role == "Teller")
+        {
+            <a href="/Home/Reservations"><i class="fas fa-ticket-alt"></i> Reservations</a>
+        }
+
+        @if (ViewBag.Role == "Admin")
+        {
+            <a href="/Home/Buses"><i class="fas fa-bus"></i> Buses</a>
+        }
+
+        <a href="/Home/Trips"><i class="fas fa-route"></i> Trips & Schedules</a>
+
+        @if (ViewBag.Role == "Admin")
+        {
+            <a href="/Home/Employees"><i class="fas fa-users"></i> Employees</a>
+            <a href="/Home/UserManagement"><i class="fas fa-user-cog"></i> User Management</a>
+        }
+    </div>
+    <div class="main">
+        <div class="card">
+            <h2>Create User Account</h2>
+            <form method="post" action="/Home/CreateUser">
+                <label>Employee ID:</label>
+                <input type="text" name="employeeId" placeholder="e.g., EMP-0002" required />
+
+                <label>Full Name:</label>
+                <input type="text" name="fullName" placeholder="Full Name" required />
+
+                <label>Username:</label>
+                <input type="text" name="username" placeholder="Username" required />
+
+                <label>Password:</label>
+                <input type="password" name="password" placeholder="Password" required />
+
+                <label>Role:</label>
+                <select name="role" required>
+                    <option value="">Select Role</option>
+                    <option value="Admin">Admin</option>
+                    <option value="HeadTeller">Head Teller</option>
+                    <option value="Teller">Teller</option>
+                    <option value="Dispatcher">Dispatcher</option>
+                </select>
+
+                <button type="submit">CREATE ACCOUNT</button>
+            </form>
+            <a href="/Home/UserManagement" class="back-link">← Back to User Management</a>
+        </div>
+    </div>
+</body>
+</html>

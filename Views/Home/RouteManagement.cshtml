@@ -1,0 +1,960 @@
+﻿@using System.Text.Encodings.Web
+@{
+    ViewData["Title"] = "Route Management";
+}
+
+<style>
+    /* =========================================
+           1. PAGE LOAD ANIMATIONS
+           ========================================= */
+    @@keyframes pageEnter {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes rowSlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes fadeSlideUp {
+        0% {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .page-header {
+        animation: pageEnter 0.4s 0.05s both;
+    }
+
+    .filter-toolbar-card {
+        animation: pageEnter 0.4s 0.20s both;
+    }
+
+    .sys-card-table {
+        animation: pageEnter 0.5s cubic-bezier(0.22,1,0.36,1) 0.25s both;
+    }
+
+    /* Staggered Row Load */
+    table.sys-table tbody tr {
+        animation: rowSlideIn 0.35s cubic-bezier(0.22,1,0.36,1) both;
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    tbody tr:nth-child(1) {
+        animation-delay: 0.05s;
+    }
+
+    tbody tr:nth-child(2) {
+        animation-delay: 0.10s;
+    }
+
+    tbody tr:nth-child(3) {
+        animation-delay: 0.15s;
+    }
+
+    tbody tr:nth-child(4) {
+        animation-delay: 0.20s;
+    }
+
+    tbody tr:nth-child(5) {
+        animation-delay: 0.25s;
+    }
+
+    /* 🔥 Table Row Smooth Filtering Animations */
+    #routesTableBody tr.slide-standby {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    #routesTableBody tr.hide-row {
+        display: none !important;
+    }
+
+    /* =========================================
+           2. LAYOUT & SPACING (20px Dashboard Gap)
+           ========================================= */
+    .res-layout-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .stats-grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    /* =========================================
+           3. DASHBOARD-STYLE STAT CARDS
+           ========================================= */
+    .dash-style-card {
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 22px 20px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 1px solid #f0f2f5;
+        position: relative;
+        overflow: hidden;
+        cursor: default;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        opacity: 0;
+        transform: translateY(15px);
+        animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+        .dash-style-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .dash-style-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dash-style-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .dash-style-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .dash-style-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            transition: height 0.3s ease;
+        }
+
+        .dash-style-card.card-blue::before {
+            background: #3b82f6;
+        }
+
+        .dash-style-card.card-green::before {
+            background: #10b981;
+        }
+
+        .dash-style-card.card-orange::before {
+            background: #f59e0b;
+        }
+
+        .dash-style-card.card-purple::before {
+            background: #8b5cf6;
+        }
+
+        .dash-style-card:hover {
+            transform: translateY(-5px);
+            border-color: transparent;
+        }
+
+        .dash-style-card.card-blue:hover {
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.12);
+        }
+
+        .dash-style-card.card-green:hover {
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.12);
+        }
+
+        .dash-style-card.card-orange:hover {
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.12);
+        }
+
+        .dash-style-card.card-purple:hover {
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.12);
+        }
+
+    .stat-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-right: 18px;
+        flex-shrink: 0;
+    }
+
+    .icon-blue {
+        background: #eff6ff;
+        color: #3b82f6;
+    }
+
+    .icon-green {
+        background: #ecfdf5;
+        color: #10b981;
+    }
+
+    .icon-orange {
+        background: #fffbeb;
+        color: #f59e0b;
+    }
+
+    .icon-purple {
+        background: #f5f3ff;
+        color: #8b5cf6;
+    }
+
+    .stat-text h3 {
+        font-size: 24px;
+        font-weight: 800;
+        color: #0f1c3f;
+        margin: 0 0 4px 0;
+        line-height: 1;
+    }
+
+    .stat-text p {
+        margin: 0;
+        font-size: 12.5px;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    /* =========================================
+           4. FILTER TOOLBAR
+           ========================================= */
+    .filter-toolbar-card {
+        background: var(--surface);
+        padding: 16px 20px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* =========================================
+           5. STICKY ACTION COLUMN
+           ========================================= */
+    .sticky-action-col {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: #fff;
+        box-shadow: -4px 0 12px rgba(15,28,63,0.04);
+    }
+
+    table.sys-table thead th.sticky-action-col {
+        background: #f8fafc;
+        z-index: 3;
+    }
+
+    table.sys-table tbody tr:hover td.sticky-action-col {
+        background: #f8fafc;
+    }
+
+    /* Styling for the Archive Button */
+    .action-btn.archive {
+        background: #fff1f2; /* Light red background */
+        color: #dc2626; /* Red icon */
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .action-btn.archive:hover {
+            background: #fecaca; /* Darker red on hover */
+            color: #991b1b;
+        }
+
+    /* Styling for the Edit Button */
+    .action-btn.edit {
+        background: #eff6ff; /* Light blue background */
+        color: #2563eb; /* Blue icon */
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .action-btn.edit:hover {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+    /* Container for the specific route info */
+    .route-highlight-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 10px 0;
+    }
+
+        .route-highlight-box small {
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+    /* Icon box in the header */
+    .header-icon-box {
+        width: 36px;
+        height: 36px;
+        background: #fff1f2; /* Soft red/orange background */
+        color: #e11d48;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+
+    /* Warning button style */
+    .btn-warning-sys {
+        background: #f59e0b; /* Professional Amber/Orange for "Warning" actions */
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+        .btn-warning-sys:hover {
+            background: #d97706;
+        }
+
+    /* Container & Centering */
+    .sys-modal-overlay {
+        display: none; /* JavaScript will change this to flex */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.4); /* Subtle overlay tint */
+        backdrop-filter: blur(2px); /* Modern touch */
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sys-modal {
+        background: white;
+        width: 100%;
+        max-width: 420px;
+        border-radius: 16px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        animation: modalSlide 0.3s ease;
+    }
+
+    @@keyframes modalSlide {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Icon Box */
+    .modal-icon-box {
+        width: 40px;
+        height: 40px;
+        background: #fff1f2;
+        color: #dc2626;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+
+    /* Route Highlight Box */
+    .route-preview-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+
+        .route-preview-box small {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+</style>
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h2 class="page-title" style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-map-marked-alt" style="color:var(--accent);"></i> Route Management
+        </h2>
+        <p class="page-sub">Configure operational routes and fare pricing.</p>
+    </div>
+</div>
+
+<div class="res-layout-wrap">
+
+    <div class="stats-grid-4">
+        <div class="dash-style-card card-blue">
+            <div class="stat-icon-wrapper icon-blue"><i class="fas fa-route"></i></div>
+            <div class="stat-text">
+                <h3 id="totalRoutes">0</h3>
+                <p>Total Routes</p>
+            </div>
+        </div>
+
+        <div class="dash-style-card card-green">
+            <div class="stat-icon-wrapper icon-green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-text">
+                <h3 id="activeRoutes">0</h3>
+                <p>Active Routes</p>
+            </div>
+        </div>
+
+        <div class="dash-style-card card-orange">
+            <div class="stat-icon-wrapper icon-orange"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-text">
+                <h3 id="avgFare">₱0</h3>
+                <p>Avg. Fare</p>
+            </div>
+        </div>
+
+        <div class="dash-style-card card-purple">
+            <div class="stat-icon-wrapper icon-purple"><i class="fas fa-tag"></i></div>
+            <div class="stat-text">
+                <h3 id="minFare">₱0</h3>
+                <p>Min. Fare</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-toolbar-card">
+        <div class="search-input-wrap" style="flex:1; min-width:220px; max-width:340px;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchRoute" class="search-input" placeholder="Search origin or destination..." onkeyup="filterRoutes()">
+        </div>
+        <select id="filterStatus" class="filter-select" style="width:auto; min-width:140px;" onchange="filterRoutes()">
+            <option value="">All Status</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+        </select>
+
+        <div style="margin-left:auto; display:flex; gap:10px; align-items: center;">
+            <button class="btn-ghost-sys" onclick="clearFilters()" style="height: 38px;">
+                <i class="fas fa-sync-alt"></i> Reset
+            </button>
+            <button type="button" class="btn-primary-sys" onclick="resetModalFields('routeModal'); openModal('routeModal');">
+                <i class="fas fa-plus-circle"></i> Add New Route
+            </button>
+        </div>
+    </div>
+
+    <div class="sys-card sys-card-table" style="border-radius:var(--radius-lg,16px); overflow:hidden;">
+
+        <div class="sys-card-header" style="padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fff;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-book" style="color: var(--accent); font-size: 16px;"></i>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--navy-800);">Routes Log</h3>
+            </div>
+            <span id="logCountBadge" style="background: var(--navy-50); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;">0 routes</span>
+        </div>
+
+        <div class="sys-table-wrap">
+            <table class="sys-table">
+                <thead>
+                    <tr>
+                        <th>Route ID</th>
+                        <th>Origin</th>
+                        <th>Destination</th>
+                        <th>Base Fare</th>
+                        <th>Distance</th>
+                        <th>Est. Hours</th>
+                        <th>Status</th>
+                        <th class="sticky-action-col" style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="routesTableBody">
+                    @if (ViewBag.Routes != null)
+                    {
+                        @foreach (var route in (List<PUBReservationSystem.Models.BusRoute>)ViewBag.Routes)
+                        {
+                            <tr id="route-row-@route.Route_ID">
+                                <td style="font-weight:700; color:var(--accent, #3b82f6);">@route.Route_ID</td>
+                                <td style="font-weight:600;">@route.Origin</td>
+                                <td style="font-weight:600;">@route.Destination</td>
+                                <td style="color:var(--green,#0fa66e); font-weight:600;">₱@route.Base_Fare.ToString("N2")</td>
+                                <td style="color:var(--text-secondary);">@(route.Distance_KM?.ToString("N2") ?? "-") KM</td>
+                                <td style="color:var(--text-secondary);">@(route.Estimated_Hours?.ToString("N2") ?? "-") hrs</td>
+                                <td>
+                                    <span class="badge-sys @(route.Is_Active ? "badge-green" : "badge-red")">
+                                        @(route.Is_Active ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td class="sticky-action-col" style="text-align:center;">
+                                    <button class="action-btn edit" title="Edit Route" onclick="editRoute('@route.Route_ID')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <button class="action-btn archive" title="Archive Route" onclick="archiveRoute('@route.Route_ID', '@route.Origin → @route.Destination')">
+                                        <i class="fas fa-archive"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+	@* ===================== MODALS ===================== *@
+    <div id="routeModal" class="sys-modal-overlay">
+        <div class="sys-modal">
+            <div class="modal-header-sys">
+                <h4 class="modal-title-sys"><i class="fas fa-map-marked-alt"></i>Add Route</h4>
+                <div class="modal-close-sys" onclick="closeModal('routeModal')"><i class="fas fa-times"></i></div>
+            </div>
+            <div class="modal-body-sys">
+                <input type="hidden" id="routeId" />
+                <div class="form-grid-2">
+                    <div class="form-group-sys">
+                        <label class="form-label-sys">Origin <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="origin" class="form-control-sys" placeholder="e.g. Tacloban City" required />
+                    </div>
+                    <div class="form-group-sys">
+                        <label class="form-label-sys">Destination <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="destination" class="form-control-sys" placeholder="e.g. Baybay City" required />
+                    </div>
+
+                    <div class="form-group-sys">
+                        <label class="form-label-sys">Base Fare <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="baseFare" class="form-control-sys" placeholder="0,000.00" required />
+                    </div>
+                    <div class="form-group-sys">
+                        <label class="form-label-sys">Distance (KM)</label>
+                        <input type="text" id="distanceKm" class="form-control-sys" placeholder="e.g. 50" />
+                    </div>
+
+                    <div class="form-group-sys">
+                        <label class="form-label-sys">Est. Hours</label>
+                        <input type="text" id="estimatedHours" class="form-control-sys" placeholder="e.g. 2.5" />
+                    </div>
+                    <div class="form-group-sys">
+                        <label class="form-label-sys">Status <span style="color:var(--red)">*</span></label>
+                        <select id="isActive" class="form-control-sys" required>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-sys">
+                <button class="btn-ghost-sys" onclick="closeModal('routeModal')">Cancel</button>
+                <button class="btn-primary-sys" onclick="saveRoute()">Save Route</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="archiveModal" class="sys-modal-overlay">
+        <div class="sys-modal">
+            <div class="modal-header-sys">
+                <div class="modal-icon-box">
+                    <i class="fas fa-archive"></i>
+                </div>
+                <h4 class="modal-title-sys">Archive Route</h4>
+                <div class="modal-close-sys" onclick="closeModal('archiveModal')">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+
+            <div class="modal-body-sys">
+                <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.95rem;">
+                    Are you sure you want to archive this route? It will be hidden from active operations.
+                </p>
+                <div class="route-preview-box">
+                    <small>Route</small>
+                    <strong id="archiveRouteName" style="color: #1e293b; display:block; font-size: 1.1rem;">--</strong>
+                </div>
+                <input type="hidden" id="archiveRouteId">
+            </div>
+
+            <div class="modal-footer-sys">
+                <button class="btn-ghost-sys" onclick="closeModal('archiveModal')">Cancel</button>
+                <button class="btn-danger-sys" onclick="confirmArchive()">Confirm Archive</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        // ===================== FILTER & ANIMATION SYSTEM =====================
+        function filterRoutes() {
+            var search = (document.getElementById('searchRoute').value || '').toLowerCase();
+            var status = document.getElementById('filterStatus').value;
+            var rows = document.querySelectorAll('#routesTableBody tr');
+
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                var text = row.textContent.toLowerCase();
+                var isActive = row.querySelector('.badge-green') !== null;
+                var match = text.includes(search) && (status === "" || (status === "true" ? isActive : !isActive));
+
+                if (match) {
+                    if (row.classList.contains('hide-row')) {
+                        row.classList.remove('hide-row');
+                        void row.offsetWidth; // Force reflow
+
+                        row.style.transition = 'opacity 0.3s ease, transform 0.3s ease, background 0.15s';
+                        row.style.transitionDelay = (visibleCount * 0.03) + 's';
+                        row.classList.remove('slide-standby');
+                    }
+                    visibleCount++;
+                } else {
+                    row.style.transition = 'none';
+                    row.style.transitionDelay = '0s';
+                    row.classList.add('hide-row');
+                    row.classList.add('slide-standby');
+                }
+            });
+            updateStats();
+        }
+
+                // This function handles the button click
+        function archiveRoute(id, name) {
+            const idInput = document.getElementById('archiveRouteId');
+            const nameText = document.getElementById('archiveRouteName');
+
+            // Safety check: Does the element exist?
+            if (!idInput) {
+                console.error("Critical Error: Cannot find element with ID 'archiveRouteId'. Is the modal HTML missing?");
+                return;
+            }
+
+            idInput.value = id;
+            if (nameText) nameText.textContent = name;
+
+            openModal('archiveModal');
+        }
+
+        // This function handles the actual request
+        function confirmArchive() {
+            const id = document.getElementById('archiveRouteId').value;
+            fetch('/Home/ArchiveRoute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'routeId=' + encodeURIComponent(id)
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    closeModal('archiveModal');
+                    // Remove the row instantly
+                    document.getElementById('route-row-' + id).remove();
+                    updateStats();
+                } else {
+                    showToast(res.message, 'error');
+                }
+            });
+        }
+
+                function resetModalFields(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+
+            // This finds every input and select box inside that modal and clears them
+            modal.querySelectorAll('input, select').forEach(el => {
+                if (el.tagName === 'SELECT') {
+                    el.selectedIndex = 0; // Reset dropdowns to the first option
+                } else {
+                    el.value = ''; // Clear text inputs
+                }
+            });
+        }
+
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. Title Case & Letters Only for Origin/Destination
+                    // 1. Update this block inside DOMContentLoaded
+                // 1. Title Case & Letters Only for Origin/Destination (Allows commas and dashes)
+        const textFields = ['origin', 'destination'];
+        textFields.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('input', function(e) {
+                    // 1. Strip out everything EXCEPT letters, spaces, commas, and dashes
+                    let val = e.target.value.replace(/[^a-zA-Z\s,-]/g, '');
+
+                    // 2. Make everything lowercase first, then dynamically capitalize
+                    // 2. Make everything lowercase first, then dynamically capitalize
+                    e.target.value = val.toLowerCase().replace(/(?:^|[\s,-])[a-z]/g, function(match) {
+                        return match.toUpperCase();
+                    });
+                });
+            }
+        });
+
+            // 2. Base Fare (Numbers with 0,000.00 format)
+            const fareEl = document.getElementById('baseFare');
+            fareEl.addEventListener('input', function(e) {
+                // Keep only numbers and one decimal point
+                e.target.value = e.target.value.replace(/[^0-9.]/g, '');
+            });
+            fareEl.addEventListener('blur', function(e) {
+                let val = parseFloat(e.target.value);
+                if (!isNaN(val)) {
+                    e.target.value = val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+            });
+
+            // 3. Numbers Only for Distance & Hours
+            ['distanceKm', 'estimatedHours'].forEach(id => {
+                document.getElementById(id).addEventListener('input', function(e) {
+                    e.target.value = e.target.value.replace(/[^0-9.]/g, '');
+                });
+            });
+        });
+
+        function getRowHtml(r) {
+            // Ensure you use the exact casing your JSON returns (usually camelCase or PascalCase)
+            // Check your browser console to see what 'r' actually contains
+            const routeId = r.route_ID || r.routeId || '';
+            const origin = r.origin || '';
+            const destination = r.destination || '';
+            const isActive = r.is_Active === true || r.is_Active === 'true';
+            const fare = parseFloat(r.base_Fare || r.baseFare) || 0;
+
+            return `
+                <td style="font-weight:700; color:var(--accent, #3b82f6);">${routeId}</td>
+                <td style="font-weight:600;">${origin}</td>
+                <td style="font-weight:600;">${destination}</td>
+                <td style="color:var(--green,#0fa66e); font-weight:600;">₱${fare.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                <td style="color:var(--text-secondary);">${r.distance_KM || '-'} KM</td>
+                <td style="color:var(--text-secondary);">${r.estimated_Hours || '-'} hrs</td>
+                <td>
+                    <span class="badge-sys ${isActive ? 'badge-green' : 'badge-red'}">
+                        ${isActive ? 'Active' : 'Inactive'}
+                    </span>
+                </td>
+                <td class="sticky-action-col" style="text-align:center;">
+                    <button class="action-btn edit" title="Edit" onclick="editRoute('${routeId}')"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn archive" title="Archive" onclick="archiveRoute('${routeId}', '${origin} → ${destination}')"><i class="fas fa-archive"></i></button>
+                </td>
+            `;
+        }
+
+        function clearFilters() {
+            var search = document.getElementById('searchRoute');
+            var status = document.getElementById('filterStatus');
+
+            if (search) search.value = '';
+            if (status) status.value = '';
+
+            filterRoutes();
+
+            if (typeof showToast === "function") {
+                showToast('Table filters reset successfully.', 'success');
+            }
+        }
+
+        // ===================== CRUD OPERATIONS =====================
+                function updateStats() {
+            // Get all rows that are currently visible (not hidden by the search filter)
+            var rows = Array.from(document.querySelectorAll('#routesTableBody tr')).filter(r => !r.classList.contains('hide-row'));
+
+            // 1. Update Total and Active Routes
+            var totalCount = rows.length;
+            var activeCount = rows.filter(r => r.querySelector('.badge-green')).length;
+
+            document.getElementById('totalRoutes').textContent = totalCount;
+            document.getElementById('activeRoutes').textContent = activeCount;
+
+            var badge = document.getElementById('logCountBadge');
+            if(badge) {
+                badge.textContent = totalCount + (totalCount === 1 ? ' route' : ' routes');
+            }
+
+            // 2. Calculate Average and Minimum Fares
+            let totalFare = 0;
+            let minFare = Infinity;
+            let validFareCount = 0;
+
+            rows.forEach(row => {
+                // Grab the 4th column (index 3) where the Base Fare is located
+                let fareCell = row.cells[3];
+
+                if (fareCell) {
+                    // Remove the '₱' symbol, commas, and spaces to get a clean number
+                    let cleanText = fareCell.textContent.replace(/[₱,\s]/g, '');
+                    let fareValue = parseFloat(cleanText);
+
+                    // If it successfully converted to a number, do the math
+                    if (!isNaN(fareValue)) {
+                        totalFare += fareValue;
+                        if (fareValue < minFare) {
+                            minFare = fareValue;
+                        }
+                        validFareCount++;
+                    }
+                }
+            });
+
+            // 3. Finalize the Math
+            let averageFare = validFareCount > 0 ? (totalFare / validFareCount) : 0;
+            let absoluteMinFare = validFareCount > 0 ? minFare : 0;
+
+            // 4. Update the UI with standard ₱0,000.00 formatting
+            document.getElementById('avgFare').textContent = '₱' + averageFare.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('minFare').textContent = '₱' + absoluteMinFare.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+                function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex'; // This forces the modal to show
+                console.log("Modal opened:", modalId);
+            } else {
+                console.error("Could not find modal with ID:", modalId);
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'none';
+        }
+
+        function editRoute(id) {
+            fetch('/Home/GetRouteById?routeId=' + id)
+                .then(r => r.json())
+                .then(data => {
+                    // Map the JSON keys exactly as they appear in your object
+                    document.getElementById('routeId').value = data.route_ID;
+                    document.getElementById('origin').value = data.origin;
+                    document.getElementById('destination').value = data.destination;
+                    document.getElementById('baseFare').value = data.base_Fare;
+                    document.getElementById('distanceKm').value = data.distance_KM || '';
+                    document.getElementById('estimatedHours').value = data.estimated_Hours || '';
+                    document.getElementById('isActive').value = data.is_Active.toString(); // Convert boolean to "true"/"false"
+
+                    openModal('routeModal');
+                });
+        }
+
+        function saveRoute() {
+            var data = new URLSearchParams({
+                routeId: document.getElementById('routeId').value,
+                origin: document.getElementById('origin').value,
+                destination: document.getElementById('destination').value,
+                baseFare: document.getElementById('baseFare').value.replace(/,/g, ''), // Strip commas for DB
+                distanceKm: document.getElementById('distanceKm').value,
+                estimatedHours: document.getElementById('estimatedHours').value,
+                isActive: document.getElementById('isActive').value
+            });
+
+            var isEdit = data.get('routeId') !== "";
+
+            fetch(isEdit ? '/Home/UpdateRoute' : '/Home/SaveRoute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: data.toString()
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    closeModal('routeModal');
+
+                    const route = res.data;
+
+                    // 1. SAFETY CHECK: Did the server send the data back?
+                    if (!route) {
+                        console.warn("Server didn't return route data! Refreshing page as fallback.");
+                        setTimeout(() => location.reload(), 1000);
+                        return;
+                    }
+
+                    const tbody = document.getElementById('routesTableBody');
+
+                    if (isEdit) {
+                        // 2. EDIT LOGIC: Update existing row instantly
+                        const row = document.getElementById('route-row-' + route.route_ID);
+                        if (row) {
+                            row.innerHTML = getRowHtml(route);
+
+                            // Flash Effect: Draws user's eyes to the updated row
+                            row.style.transition = 'background-color 0.5s ease';
+                            row.style.backgroundColor = '#eff6ff'; // Light blue
+                            setTimeout(() => row.style.backgroundColor = '', 800);
+                        } else {
+                            // Fallback just in case the row ID couldn't be found
+                            setTimeout(() => location.reload(), 1000);
+                        }
+                    } else {
+                        // 3. ADD LOGIC: Insert new row instantly at the top
+                        const newRow = document.createElement('tr');
+                        newRow.id = 'route-row-' + route.route_ID;
+                        newRow.innerHTML = getRowHtml(route);
+                        tbody.insertAdjacentElement('afterbegin', newRow);
+
+                        // Flash Effect for new row
+                        newRow.style.transition = 'background-color 0.5s ease';
+                        newRow.style.backgroundColor = '#eff6ff';
+                        setTimeout(() => newRow.style.backgroundColor = '', 800);
+                    }
+
+                    // 4. Update the stat cards based on the new table data
+                    updateStats();
+                } else {
+                    showToast(res.message, 'error');
+                }
+            })
+            .catch(err => {
+                // 5. Catch network errors (e.g., server offline)
+                console.error("Error saving route:", err);
+                showToast('An error occurred while saving.', 'error');
+            });
+        }
+
+       
+
+        document.addEventListener("DOMContentLoaded", updateStats);
+    </script>
+}

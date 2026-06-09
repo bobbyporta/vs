@@ -1,0 +1,698 @@
+﻿@model List<PUBReservationSystem.Models.AuditLog>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "System Audit Logs";
+}
+
+<style>
+    /* =========================================
+               ANIMATIONS (From Reservations)
+           ========================================= */
+    @@keyframes pageEnter {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .page-header {
+        animation: pageEnter 0.4s 0.05s both;
+    }
+
+    .audit-tabs-container {
+        animation: pageEnter 0.4s 0.10s both;
+    }
+
+    .filter-toolbar-card {
+        animation: pageEnter 0.4s 0.20s both;
+    }
+
+    .table-card {
+        animation: pageEnter 0.5s cubic-bezier(0.22,1,0.36,1) 0.25s both;
+    }
+
+    /* =========================================
+               PAGE HEADER
+           ========================================= */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .page-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--navy-800, #0f1c3f);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .page-title i {
+            color: var(--accent, #3b6cf7);
+            font-size: 22px;
+        }
+
+    .page-subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 3px 0 0;
+    }
+
+    .admin-mode-badge {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* =========================================
+               TABS NAVIGATION
+           ========================================= */
+    .audit-tabs-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 24px;
+        overflow-x: auto;
+    }
+
+    .audit-tab {
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary, #64748b);
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .audit-tab:hover {
+            background: #f8fafc;
+            color: var(--navy-800, #0f1c3f);
+        }
+
+        .audit-tab.active {
+            background: var(--accent-soft, #e8eeff);
+            color: var(--accent, #3b6cf7);
+            border: 1px solid #bfdbfe;
+        }
+
+    /* =========================================
+               FILTER TOOLBAR (Matches Reservation Style)
+           ========================================= */
+    .filter-toolbar-card {
+        background: var(--surface, #ffffff);
+        padding: 16px 20px;
+        border-radius: var(--radius, 8px);
+        box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+        border: 1px solid var(--border, #e2e8f0);
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 12px;
+        overflow-x: auto;
+        white-space: nowrap;
+        margin-bottom: 24px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: border-color 0.2s;
+        color: #334155;
+        outline: none;
+        background: white;
+    }
+
+        .form-control:focus {
+            border-color: var(--accent, #3b82f6);
+            box-shadow: 0 0 0 3px rgba(59,108,247,0.1);
+        }
+
+        .form-control::placeholder {
+            color: #94a3b8;
+        }
+
+    /* Inherited Button Styles */
+    .btn-ghost-sys {
+        background: white;
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: 8px;
+        color: #475569;
+        font-weight: 600;
+        font-size: 13.5px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+        .btn-ghost-sys:hover {
+            background: #f8fafc;
+            color: #0f1c3f;
+        }
+
+    .btn-primary-sys {
+        background: var(--navy-800, #0f1c3f);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13.5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+    }
+
+        .btn-primary-sys:hover {
+            background: #1e293b;
+        }
+
+
+    /* =========================================
+               TABLE CARD & STRUCTURE
+           ========================================= */
+    .table-card {
+        background: white;
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: var(--radius-lg, 16px);
+        padding: 16px 0 0 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    .table-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px 16px 20px;
+        border-bottom: 1px solid var(--border, #e2e8f0);
+    }
+
+    .table-title {
+        font-size: 14.5px;
+        font-weight: 700;
+        color: var(--navy-800, #0f1c3f);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .record-counter {
+        background: var(--accent-soft, #e8eeff);
+        color: var(--accent, #3b6cf7);
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+
+    .table-responsive-wrapper {
+        overflow-x: auto;
+        width: 100%;
+    }
+
+    .logs-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+        .logs-table th {
+            padding: 13px 16px;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            color: var(--text-muted, #94a3b8);
+            font-weight: 700;
+            background: #f8fafd;
+            border-bottom: 1px solid var(--border, #e2e8f0);
+        }
+
+        .logs-table td {
+            padding: 13px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border, #e2e8f0);
+            background: white;
+        }
+
+        .logs-table tbody tr:hover td {
+            background: #f0f4ff;
+        }
+
+    /* Typography */
+    .text-date {
+        color: var(--text-secondary, #64748b);
+    }
+
+    .text-time {
+        color: var(--navy-800, #0f1c3f);
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    .text-user {
+        font-weight: 500;
+        color: #334155;
+    }
+
+    .text-desc {
+        color: var(--text-secondary, #64748b);
+    }
+
+    .status-danger {
+        color: var(--red, #e0413a);
+        font-weight: 700;
+    }
+
+    .status-success {
+        color: var(--green, #0fa66e);
+        font-weight: 700;
+    }
+
+    .sticky-col {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: #fff;
+        box-shadow: -4px 0 12px rgba(15,28,63,0.04);
+        color: var(--text-secondary, #64748b);
+    }
+
+    .logs-table th.sticky-col {
+        background: #f8fafd;
+        z-index: 3;
+    }
+
+    .logs-table tbody tr:hover td.sticky-col {
+        background: #f0f4ff;
+    }
+
+    .empty-state {
+        display: none;
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .empty-state-text {
+        color: var(--text-muted, #94a3b8);
+        font-size: 13.5px;
+        margin: 0;
+    }
+
+    /* =========================================
+               PRINT STYLES
+           ========================================= */
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+
+        .page-header, .audit-tabs-container, .filter-toolbar-card {
+            display: none !important;
+        }
+
+        .table-card, .table-card * {
+            visibility: visible;
+        }
+
+        .table-card {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none;
+            box-shadow: none;
+        }
+
+        .sticky-col {
+            position: static !important;
+            box-shadow: none !important;
+        }
+
+        .logs-table th, .logs-table td {
+            padding: 8px !important;
+            white-space: normal;
+        }
+    }
+
+    /* Animation for row filtering */
+    @@keyframes slideIn {
+        from {
+            transform: translateX(-15px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .row-animate {
+        animation: slideIn 0.3s ease-out forwards;
+    }
+</style>
+
+<div class="buses-view-container">
+
+    <div class="page-header">
+        <div>
+            <h2 class="page-title">
+                <i class="fas fa-history"></i> System Audit Logs
+            </h2>
+            <p class="page-subtitle">Administrative view — all system changes and activities</p>
+        </div>
+        <div class="admin-mode-badge">
+            <i class="fas fa-shield-alt" style="color:var(--accent);"></i> Administrative Mode
+        </div>
+    </div>
+
+    <div class="audit-tabs-container">
+        <button class="audit-tab active" data-target="all" onclick="switchTab('all', this)">
+            All Logs
+        </button>
+        <button class="audit-tab" data-target="logins" onclick="switchTab('logins', this)">
+            <i class="fas fa-sign-in-alt"></i> Logins
+        </button>
+        <button class="audit-tab" data-target="reservations" onclick="switchTab('reservations', this)">
+            <i class="fas fa-ticket-alt"></i> Reservations
+        </button>
+        <button class="audit-tab" data-target="trips" onclick="switchTab('trips', this)">
+            <i class="fas fa-route"></i> Fleet & Trips
+        </button>
+        <button class="audit-tab" data-target="users" onclick="switchTab('users', this)">
+            <i class="fas fa-users"></i> User Management
+        </button>
+        <button class="audit-tab" data-target="sales" onclick="switchTab('sales', this)">
+            <i class="fas fa-chart-line"></i> Sales Reports
+        </button>
+    </div>
+
+    <div class="filter-toolbar-card">
+
+        <div style="display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; flex: 1;">
+            <div style="position:relative; flex: 1; min-width: 200px; max-width: 320px;">
+                <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:13px; pointer-events:none;"></i>
+                <input type="text" id="searchLogs" class="form-control" style="padding-left:34px; margin: 0;"
+                       placeholder="Search logs..." onkeyup="filterAuditLogs()">
+            </div>
+
+            <select id="dynamicActionFilter" class="form-control" style="width: 150px; margin: 0;" onchange="filterAuditLogs()">
+                <option value="">All Actions</option>
+            </select>
+        </div>
+
+        <input type="date" id="dateFilter" class="filter-select" onchange="filterAuditLogs()">
+
+        <div style="display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 6px;">
+            <button class="btn-ghost-sys" onclick="resetFilters()" style="margin: 0; padding: 8px 14px;">
+                <i class="fas fa-sync-alt"></i> Reset
+            </button>
+
+            <button class="btn-primary-sys" onclick="printLogs()" style="margin: 0; padding: 8px 14px;">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-header-row">
+            <h5 class="table-title">
+                <i class="fas fa-book-open table-icon"></i> Logs Directory
+                <span id="printTabIndicator" style="display:none; margin-left: 10px; color:var(--text-secondary); font-weight:400; font-size:12px;"></span>
+            </h5>
+            <span id="recordCounter" class="record-counter">
+                @Model.Count records
+            </span>
+        </div>
+
+        <div class="table-responsive-wrapper">
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>User Name</th>
+                        <th>Employee ID</th>
+                        <th>User ID</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                        <th class="sticky-col">Terminal</th>
+                    </tr>
+                </thead>
+
+                <tbody id="auditTableBody">
+                    @foreach (var log in Model)
+                    {
+                        var actionUpper = (log.Action ?? "").ToUpper();
+                        var category = "other";
+
+                        // 1. Identify Authentication Logs
+                        if (actionUpper.Contains("LOGIN") || actionUpper.Contains("LOGOUT"))
+                        {
+                            category = "logins";
+                        }
+                        // 2. Identify Fleet & Trip Logs First (Captures "CANCEL TRIP", "DISPATCH", etc.)
+                        else if (actionUpper.Contains("TRIP") || actionUpper.Contains("DISPATCH") || actionUpper.Contains("BUS") || actionUpper.Contains("ROUTE"))
+                        {
+                            category = "trips";
+                        }
+                        // 3. Identify Reservation Logs (Captures Booking, standard Customer Cancel, and Auto-Archive cleanups)
+                        else if (actionUpper.Contains("RESERVATION") || actionUpper.Contains("BOOK") || actionUpper.Contains("CANCEL") || actionUpper.Contains("ARCHIVE"))
+                        {
+                            category = "reservations";
+                        }
+                        // 4. Identify Personnel Management Logs
+                        else if (actionUpper.Contains("USER") || actionUpper.Contains("EMP") || actionUpper.Contains("ACTIVATE") || actionUpper.Contains("DEACTIVATE"))
+                        {
+                            category = "users";
+                        }
+                        // 5. Identify Finance/Sales Logs
+                        else if (actionUpper.Contains("SALE") || actionUpper.Contains("PAYMENT") || actionUpper.Contains("INCOME") || actionUpper.Contains("REPORT"))
+                        {
+                            category = "sales";
+                        }
+
+                        <tr class="audit-row" data-category="@category">
+                            <td class="text-date">@log.Timestamp.ToString("MMM dd, yyyy")</td>
+                            <td class="text-time">@log.Timestamp.ToString("hh:mm:ss tt")</td>
+                            <td class="text-user">@(log.User?.Employee?.Full_Name ?? "System Auto")</td>
+                            <td style="color:var(--text-secondary); font-size: 13px;">@(log.User?.Employee?.Employee_ID ?? "N/A")</td>
+                            <td style="color:var(--text-secondary); font-size: 13px;">@log.User_ID</td>
+                            <td class="action-cell">
+                                @if (actionUpper.Contains("CANCEL") || actionUpper.Contains("LOGOUT") || actionUpper.Contains("DEACTIVATE") || actionUpper.Contains("ARCHIVE"))
+                                {
+                                    <span class="status-danger"><i class="fas fa-times-circle status-icon"></i> @log.Action</span>
+                                }
+                                else
+                                {
+                                    <span class="status-success"><i class="fas fa-check-circle status-icon"></i> @log.Action</span>
+                                }
+                            </td>
+                            <td class="text-desc">@log.Description</td>
+                            <td class="sticky-col">@(log.Terminal ?? "N/A")</td>
+                        </tr>
+                    }
+
+                    <tr id="noResultsRow" class="empty-state-row" style="display: none;">
+                        <td colspan="8" style="text-align:center; padding: 40px;">
+                            <div class="empty-state-content" style="color: #94a3b8;">
+                                <i class="fas fa-search" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                <h4>No logs found</h4>
+                                <p style="font-size: 13px;">No records match your selected filters. Try adjusting your search.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="noLogsMessage" class="empty-state">
+            <p class="empty-state-text">No records found for this category.</p>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentTab = 'all';
+        let filterTimeout = null;
+
+        // Tab Switcher
+                function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.audit-tab').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // This updates the variable that the filter uses
+            currentTab = tabId;
+
+            updateDropdownMenu(tabId);
+            filterAuditLogs(); // Run the new filter immediately when tab switches
+        }
+
+        // Dynamic Dropdown Engine
+                function updateDropdownMenu(tabId) {
+            const dropdown = document.getElementById('dynamicActionFilter');
+            let optionsHTML = '<option value="">All Actions</option>';
+
+            if (tabId === 'logins') {
+                optionsHTML += `<option value="login">Login</option><option value="logout">Logout</option>`;
+            }
+            else if (tabId === 'reservations') {
+                // ✅ FIXED: Added archive filters to the reservation drop context panel
+                optionsHTML += `<option value="book">Book / New</option><option value="cancel">Cancel</option><option value="archive">Auto Archive</option>`;
+            }
+            else if (tabId === 'trips') {
+                // ✅ FIXED: Removed archive option from here, added cancel option for trip breakdowns
+                optionsHTML += `<option value="dispatch">Dispatch</option><option value="cancel">Cancel Trip</option>`;
+            }
+            else if (tabId === 'users') {
+                optionsHTML += `<option value="activate">Activate / Create</option><option value="deactivate">Deactivate</option>`;
+            }
+
+            dropdown.innerHTML = optionsHTML;
+        }
+
+        // Filter Engine
+                   // Filter Engine
+                // Variable to hold the timer
+        let debounceTimer;
+
+                function filterAuditLogs() {
+            clearTimeout(debounceTimer);
+
+            debounceTimer = setTimeout(() => {
+                const tableBody = document.getElementById('auditTableBody');
+                const searchInput = document.getElementById('searchLogs');
+                const actionSelect = document.getElementById('dynamicActionFilter');
+                const dateInput = document.getElementById('dateFilter');
+                const noResultsRow = document.getElementById('noResultsRow');
+
+                let searchText = searchInput.value.toLowerCase().trim();
+                let actionVal = actionSelect.value.toLowerCase().trim();
+                let dateVal = dateInput.value;
+
+                let rows = tableBody.querySelectorAll('tr.audit-row');
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    // 1. Date Check
+                    let dateCellText = row.cells[0].textContent.trim();
+                    let rowDateObj = new Date(dateCellText);
+                    let rowDateFormatted = !isNaN(rowDateObj.getTime()) ? rowDateObj.toISOString().split('T')[0] : "";
+
+                    // 2. Category Check (The part that was missing)
+                    let rowCategory = row.getAttribute('data-category');
+
+                    // 3. Search & Action Text
+                    let rowText = row.textContent.toLowerCase();
+                    let actionCellText = row.cells[5] ? row.cells[5].textContent.toLowerCase() : "";
+
+                    // LOGIC: All conditions must be true
+                    let matchesSearch = rowText.includes(searchText);
+                    let matchesAction = actionVal === "" || actionCellText.includes(actionVal);
+                    let matchesDate = dateVal === "" || rowDateFormatted === dateVal;
+                    let matchesCategory = (currentTab === 'all' || rowCategory === currentTab);
+
+                    if (matchesSearch && matchesAction && matchesDate && matchesCategory) {
+                        row.style.display = '';
+                        visibleCount++;
+
+                        // Animation
+                        row.classList.remove('row-animate');
+                        void row.offsetWidth;
+                        row.classList.add('row-animate');
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Show "No Results" row if nothing found
+                if (noResultsRow) {
+                    noResultsRow.style.display = (visibleCount === 0) ? 'table-row' : 'none';
+                }
+            }, 300);
+        }
+
+        function resetFilters() {
+            // Safely get elements
+            const search = document.getElementById('searchLogs');
+            const action = document.getElementById('dynamicActionFilter');
+            const date = document.getElementById('dateFilter');
+
+            if (search) search.value = '';
+            if (action) action.value = '';
+            if (date) date.value = '';
+
+            filterAuditLogs();
+
+            // Toast notification
+            if (typeof showToast === 'function') {
+                showToast("Filters have been cleared", "success");
+            }
+        }
+
+        // Context-Aware Print
+        function printLogs() {
+            const printIndicator = document.getElementById('printTabIndicator');
+            printIndicator.innerText = `(Category: ${currentTab.toUpperCase()})`;
+            printIndicator.style.display = 'inline';
+
+            const originalTitle = document.title;
+            const dateStr = new Date().toISOString().slice(0,10);
+            document.title = `SystemAuditLogs_${currentTab.toUpperCase()}_${dateStr}`;
+
+            window.print();
+
+            document.title = originalTitle;
+            printIndicator.style.display = 'none';
+        }
+
+            // Automatically switch tabs based on the URL parameter (e.g., ?tab=sales)
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedTab = urlParams.get('tab');
+
+            if (requestedTab) {
+                // Find the button that matches the requested tab
+                const targetBtn = document.querySelector(`.audit-tab[data-target="${requestedTab}"]`);
+                if (targetBtn) {
+                    // Trigger the switch
+                    switchTab(requestedTab, targetBtn);
+                }
+            } else {
+                // Default initialization if no tab is in the URL
+                filterAuditLogs();
+            }
+        });
+    </script>
+}

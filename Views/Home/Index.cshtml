@@ -1,0 +1,1701 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    /* PAGE ENTRANCE ANIMATION */
+    @@keyframes pageEnter {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .db-wrap {
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .db-stats-grid .db-stat-card:nth-child(1) {
+        animation: pageEnter 0.4s 0.05s both;
+    }
+
+    .db-stats-grid .db-stat-card:nth-child(2) {
+        animation: pageEnter 0.4s 0.10s both;
+    }
+
+    .db-stats-grid .db-stat-card:nth-child(3) {
+        animation: pageEnter 0.4s 0.15s both;
+    }
+
+    .db-stats-grid .db-stat-card:nth-child(4) {
+        animation: pageEnter 0.4s 0.20s both;
+    }
+
+    /* CARD STAGGER ENTRANCE */
+    .db-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .db-wrap > .db-card {
+        animation-delay: 0.25s;
+    }
+
+    .db-lower-grid > .db-card:nth-child(1) {
+        animation-delay: 0.30s;
+    }
+
+    .db-lower-grid > .db-card:nth-child(2) {
+        animation-delay: 0.35s;
+    }
+
+    .db-lower-grid > .db-card:nth-child(3) {
+        animation-delay: 0.40s;
+    }
+
+    .db-lower-grid > .db-card:nth-child(4) {
+        animation-delay: 0.45s;
+    }
+
+    :root {
+        --navy: #0f1c3f;
+        --accent: #3b6cf7;
+        --accent-soft: #e8eeff;
+        --green: #0fa66e;
+        --green-soft: #e3f9f1;
+        --orange: #f07d1c;
+        --orange-soft: #fef3e6;
+        --red: #e0413a;
+        --red-soft: #fdeaea;
+        --yellow-soft: #fffbeb;
+        --surface: #ffffff;
+        --bg: #f0f3fb;
+        --border: #e2e8f4;
+        --text-primary: #0f1c3f;
+        --text-secondary: #5a6a8a;
+        --text-muted: #9aaabf;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 4px rgba(15,28,63,0.06), 0 2px 12px rgba(15,28,63,0.04);
+    }
+
+    /* GREETING */
+    .db-greeting {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .db-greeting h2 {
+            font-size: 21px;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: -0.4px;
+            margin: 0;
+        }
+
+        .db-greeting p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 3px 0 0;
+        }
+
+    .db-live-badge {
+        background: var(--navy);
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .db-live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+        animation: dbPulse 2s infinite;
+    }
+
+    @@keyframes dbPulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.5;
+            transform: scale(0.8);
+        }
+    }
+
+    /* STATS */
+    .db-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+    }
+
+    .db-stat-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease;
+        cursor: default;
+    }
+
+        .db-stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .db-stat-card.s-blue::after {
+            background: var(--accent);
+        }
+
+        .db-stat-card.s-green::after {
+            background: var(--green);
+        }
+
+        .db-stat-card.s-orange::after {
+            background: var(--orange);
+        }
+
+        .db-stat-card.s-red::after {
+            background: var(--red);
+        }
+
+        /* REFINED HOVER EFFECT FOR STAT CARDS */
+        .db-stat-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 12px 24px rgba(15,28,63,0.1), 0 4px 12px rgba(15,28,63,0.06);
+            z-index: 1;
+        }
+
+        .db-stat-card.s-blue:hover {
+            border-color: var(--accent);
+        }
+
+        .db-stat-card.s-green:hover {
+            border-color: var(--green);
+        }
+
+        .db-stat-card.s-orange:hover {
+            border-color: var(--orange);
+        }
+
+        .db-stat-card.s-red:hover {
+            border-color: var(--red);
+        }
+
+    .db-stat-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+        transition: transform 0.3s ease;
+    }
+
+    .db-stat-card:hover .db-stat-icon {
+        transform: scale(1.1) rotate(3deg);
+    }
+
+    .db-stat-icon.s-blue {
+        background: var(--accent-soft);
+        color: var(--accent);
+    }
+
+    .db-stat-icon.s-green {
+        background: var(--green-soft);
+        color: var(--green);
+    }
+
+    .db-stat-icon.s-orange {
+        background: var(--orange-soft);
+        color: var(--orange);
+    }
+
+    .db-stat-icon.s-red {
+        background: var(--red-soft);
+        color: var(--red);
+    }
+
+    .db-stat-val {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--navy);
+        line-height: 1;
+        letter-spacing: -0.5px;
+        margin: 0;
+        transition: transform 0.25s ease, color 0.25s ease;
+    }
+
+        .db-stat-val.bump {
+            transform: scale(1.18);
+            color: var(--accent);
+        }
+
+    .db-stat-lbl {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin: 3px 0 0;
+    }
+
+    /* CARD HEADER */
+    .db-card-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .db-card-title {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--navy);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+        .db-card-title i {
+            color: var(--accent);
+        }
+
+    .db-count-badge {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 10px;
+    }
+
+    /* TABLE */
+    .db-table-wrap {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+        .db-table-wrap::-webkit-scrollbar {
+            height: 5px;
+        }
+
+        .db-table-wrap::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .db-table-wrap::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+            .db-table-wrap::-webkit-scrollbar-thumb:hover {
+                background: var(--text-muted);
+            }
+
+    table.db-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+        white-space: nowrap;
+    }
+
+        table.db-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: #f8fafd;
+            color: var(--text-muted);
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 11px 16px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        table.db-table tbody td {
+            padding: 11px 16px;
+            border-bottom: 1px solid #f3f6fb;
+            color: var(--text-primary);
+        }
+
+        table.db-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        table.db-table tbody tr:hover td {
+            background: #f8fafd;
+        }
+
+        table.db-table th.sticky-col,
+        table.db-table td.sticky-col {
+            position: sticky;
+            right: 0;
+            z-index: 4;
+            background: white;
+            box-shadow: -3px 0 8px rgba(15,28,63,0.06);
+        }
+
+        table.db-table thead th.sticky-col {
+            background: #f8fafd;
+            z-index: 6;
+        }
+
+    .db-pill-active {
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 20px;
+        display: inline-block;
+    }
+
+    .db-trip-id {
+        font-weight: 700;
+        color: var(--accent);
+        font-size: 11.5px;
+    }
+
+    .db-mono {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* LOWER GRID */
+    .db-lower-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    /* REVENUE */
+    /* REVENUE */
+    .db-rev-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+
+        .db-rev-table td {
+            padding: 8px 16px; /* REDUCED from 10px to match Activity rows */
+            border-bottom: 1px solid #f3f6fb;
+            vertical-align: middle;
+        }
+
+        .db-rev-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .db-rev-table tr.db-today td {
+            /* CHANGED to match the ultra-light transparent green from Activity rows */
+            background: rgba(15, 166, 110, 0.05);
+        }
+
+    .db-rev-date {
+        color: var(--text-secondary);
+    }
+
+    .db-rev-today-date {
+        color: var(--green);
+        font-weight: 600;
+    }
+
+    .db-rev-amount {
+        text-align: right;
+        font-weight: 600;
+        color: var(--navy);
+        font-size: 12px;
+    }
+
+    .db-rev-today-amount {
+        text-align: right;
+        font-weight: 700;
+        color: var(--green);
+        font-size: 12px;
+        transition: transform 0.25s ease, color 0.25s ease;
+    }
+
+        .db-rev-today-amount.bump {
+            transform: scale(1.12);
+        }
+
+    /* NEW: Footer for the redirect link */
+    .db-card-footer {
+        padding: 10px 16px;
+        text-align: center;
+        border-top: 1px solid var(--border);
+        background: #f8fafd;
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+
+        .db-card-footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+            .db-card-footer a:hover {
+                color: var(--accent);
+            }
+
+    /* ALL ROW INSERTION ANIMATIONS (Tables and Lists) */
+    @@keyframes rowSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .db-act-row,
+    .db-comp-row,
+    .db-route-row,
+    table.db-table tbody tr,
+    .db-rev-table tbody tr {
+        animation: rowSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+        /* Stagger default 10 children for any list/table */
+        tbody tr:nth-child(1), .db-act-row:nth-child(1), .db-route-row:nth-child(1), .db-comp-row:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        tbody tr:nth-child(2), .db-act-row:nth-child(2), .db-route-row:nth-child(2), .db-comp-row:nth-child(2) {
+            animation-delay: 0.10s;
+        }
+
+        tbody tr:nth-child(3), .db-act-row:nth-child(3), .db-route-row:nth-child(3), .db-comp-row:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        tbody tr:nth-child(4), .db-act-row:nth-child(4), .db-route-row:nth-child(4), .db-comp-row:nth-child(4) {
+            animation-delay: 0.20s;
+        }
+
+        tbody tr:nth-child(5), .db-act-row:nth-child(5), .db-route-row:nth-child(5), .db-comp-row:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        tbody tr:nth-child(6), .db-act-row:nth-child(6), .db-route-row:nth-child(6), .db-comp-row:nth-child(6) {
+            animation-delay: 0.30s;
+        }
+
+        tbody tr:nth-child(7), .db-act-row:nth-child(7), .db-route-row:nth-child(7), .db-comp-row:nth-child(7) {
+            animation-delay: 0.35s;
+        }
+
+        tbody tr:nth-child(8), .db-act-row:nth-child(8), .db-route-row:nth-child(8), .db-comp-row:nth-child(8) {
+            animation-delay: 0.40s;
+        }
+
+        tbody tr:nth-child(9), .db-act-row:nth-child(9), .db-route-row:nth-child(9), .db-comp-row:nth-child(9) {
+            animation-delay: 0.45s;
+        }
+
+        tbody tr:nth-child(10), .db-act-row:nth-child(10), .db-route-row:nth-child(10), .db-comp-row:nth-child(10) {
+            animation-delay: 0.50s;
+        }
+
+    /* ACTIVITY */
+    .db-act-list {
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+        .db-act-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .db-act-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+    .db-act-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid #f3f6fb;
+        font-size: 12.5px;
+        transition: background 0.3s;
+    }
+
+        .db-act-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Subtle tint per event type */
+        .db-act-row.tint-green {
+            background: rgba(15, 166, 110, 0.05);
+        }
+
+        .db-act-row.tint-gray {
+            background: rgba(100, 116, 139, 0.05);
+        }
+
+        .db-act-row.tint-yellow {
+            background: rgba(245, 158, 11, 0.06);
+        }
+
+        .db-act-row.tint-red {
+            background: rgba(224, 65, 58, 0.05);
+        }
+
+    .db-act-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .db-act-login {
+        background: var(--green-soft);
+        color: var(--green);
+    }
+
+    .db-act-logout {
+        background: #f1f5f9;
+        color: var(--text-secondary);
+    }
+
+    .db-act-lock {
+        background: var(--red-soft);
+        color: var(--red);
+    }
+
+    .db-act-create {
+        background: var(--yellow-soft);
+        color: #b45309;
+    }
+
+    .db-act-dispatch {
+        background: var(--orange-soft);
+        color: var(--orange);
+    }
+
+    .db-act-action {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 12px;
+    }
+
+    .db-act-user {
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .db-act-time {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    /* ROUTES */
+    .db-routes-list {
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+        .db-routes-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .db-routes-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+    .db-route-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto auto;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-bottom: 1px solid #f3f6fb;
+        font-size: 12.5px;
+    }
+
+        .db-route-row:last-child {
+            border-bottom: none;
+        }
+
+    .db-route-origin {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .db-route-dest {
+        color: var(--text-secondary);
+    }
+
+    .db-route-fare {
+        font-weight: 600;
+        color: var(--green);
+        font-size: 12px;
+    }
+
+    .db-route-km {
+        color: var(--text-muted);
+        font-size: 11px;
+        text-align: right;
+    }
+
+    /* COMPLETED */
+    .db-comp-list {
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+        .db-comp-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .db-comp-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+    .db-comp-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid #f3f6fb;
+        font-size: 12.5px;
+    }
+
+        .db-comp-row:last-child {
+            border-bottom: none;
+        }
+
+    .db-comp-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        flex-shrink: 0;
+    }
+
+    .db-comp-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        flex: 1;
+        font-size: 12.5px;
+    }
+
+    .db-comp-sub {
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .db-comp-time {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .db-verified {
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 10px;
+    }
+
+    /* BADGES */
+    .db-live-feed-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 9px 3px 7px;
+        border-radius: 10px;
+    }
+
+    .db-rotate-badge {
+        background: var(--orange-soft);
+        color: var(--orange);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 10px;
+    }
+
+    /* WEATHER BOUNCE */
+    @@keyframes weatherBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        30% {
+            transform: translateY(-5px);
+        }
+
+        60% {
+            transform: translateY(2px);
+        }
+    }
+
+    .weather-bounce {
+        animation: weatherBounce 3s ease-in-out infinite;
+        display: inline-block;
+    }
+
+    /* ACTIVITY */
+    .db-act-list {
+        max-height: 255px; /* Perfectly fits 5 rows */
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+        /* The Ultra-Thin, Transparent Scrollbar */
+        .db-act-list::-webkit-scrollbar {
+            width: 3px; /* Extremely thin */
+        }
+
+        .db-act-list::-webkit-scrollbar-track {
+            background: transparent; /* Invisible track */
+        }
+
+        .db-act-list::-webkit-scrollbar-thumb {
+            background: rgba(15, 28, 63, 0.12); /* Barely visible navy tint */
+            border-radius: 4px;
+        }
+
+            .db-act-list::-webkit-scrollbar-thumb:hover {
+                background: rgba(15, 28, 63, 0.25); /* Slightly darker when hovered */
+            }
+
+            .bump {
+    transition: background-color 0.3s ease-in-out;
+    background-color: #e0f2fe; /* Light blue highlight to signal an update */
+}
+
+    @@keyframes slideInLeft {
+        0% {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .animate-slide-in {
+        animation: slideInLeft 0.5s ease-out forwards;
+    }
+
+    .activity-row {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        transition: background 0.3s ease;
+    }
+
+        .activity-row:hover {
+            background-color: #f8fafc;
+        }
+
+    .activity-icon {
+        width: 30px;
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .activity-info {
+        flex-grow: 1;
+        margin-left: 10px;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: #0f1c3f;
+        font-size: 12px;
+    }
+
+    .activity-sub {
+        font-size: 11px;
+        color: #475569;
+    }
+
+    .activity-time {
+        font-size: 10px;
+        color: #94a3b8;
+        white-space: nowrap;
+        margin-left: 10px;
+    }
+
+    /* ACTIVITY */
+    /* 1. Force the container to be rigid */
+    .db-act-list {
+        display: block !important; /* Force block layout to respect height */
+        height: 250px !important; /* Hard lock to 250px */
+        max-height: 250px !important;
+        overflow-y: auto !important; /* Only show scrollbar here */
+        overflow-x: hidden;
+        flex: none !important; /* Prevent flexbox from stretching this container */
+    }
+
+    /* 2. Standardize row height so they don't grow */
+    .db-act-row {
+        height: 50px; /* Force row to be 50px */
+        padding: 0 16px; /* Use flexbox centering instead of padding for vertical space */
+        border-bottom: 1px solid #f3f6fb;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-sizing: border-box; /* Crucial: border/padding included in 50px height */
+        flex-shrink: 0; /* Do not shrink this row */
+    }
+
+        /* The Ultra-Thin, Transparent Scrollbar */
+        .db-act-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .db-act-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .db-act-list::-webkit-scrollbar-thumb {
+            background: rgba(15, 28, 63, 0.12);
+            border-radius: 4px;
+        }
+</style>
+
+<div class="db-wrap">
+
+    @* GREETING *@
+    <div class="db-greeting">
+        <div>
+            <h2>Good @(DateTime.Now.Hour < 12 ? "Morning" : DateTime.Now.Hour < 17 ? "Afternoon" : "Evening"), @Context.Session.GetString("Username")! ☀️</h2>
+            <p>@DateTime.Now.ToString("dddd, MMMM dd, yyyy") — @(ViewBag.BranchName ?? "General") Operations Center</p>
+        </div>
+        <div class="db-live-badge">
+            <span class="db-live-dot"></span> Live Operations
+        </div>
+    </div>
+
+    @* STATS *@
+    <div class="db-stats-grid">
+        <div class="db-stat-card s-blue">
+            <div class="db-stat-icon s-blue"><i class="fas fa-ticket-alt"></i></div>
+            <div>
+                <p class="db-stat-val" id="statTotalReservations">@(ViewBag.TotalReservations ?? 0)</p>
+                <p class="db-stat-lbl">Total Reservations</p>
+            </div>
+        </div>
+        <div class="db-stat-card s-green">
+            <div class="db-stat-icon s-green"><i class="far fa-clock"></i></div>
+            <div>
+                <p class="db-stat-val" id="statScheduledTrips">@(ViewBag.ScheduledTrips ?? 0)</p>
+                <p class="db-stat-lbl">Scheduled Trips</p>
+            </div>
+        </div>
+        <div class="db-stat-card s-orange">
+            <div class="db-stat-icon s-orange"><i class="fas fa-road"></i></div>
+            <div>
+                <p class="db-stat-val" id="statInTransit">@(ViewBag.InTransitBuses ?? 0)</p>
+                <p class="db-stat-lbl">Buses In Transit</p>
+            </div>
+        </div>
+        <div class="db-stat-card s-red">
+            <div class="db-stat-icon s-red"><i class="fas fa-times-circle"></i></div>
+            <div>
+                <p class="db-stat-val" id="statCancelled">@(ViewBag.CancelledTrips ?? 0)</p>
+                <p class="db-stat-lbl">Cancelled Trips</p>
+            </div>
+        </div>
+    </div>
+
+    @* TODAY'S TRIPS *@
+    <div class="db-card">
+        <div class="db-card-header">
+            <h5 class="db-card-title"><i class="far fa-calendar-alt"></i> Today's Scheduled Trips</h5>
+            <span class="db-count-badge" id="tripCountBadge">— trips</span>
+        </div>
+        <div class="db-table-wrap">
+            <table class="db-table">
+                <thead>
+                    <tr>
+                        <th>Trip ID</th>
+                        <th>Bus Name</th>
+                        <th>Body No.</th>
+                        <th>Origin</th>
+                        <th>Destination</th>
+                        <th>Departure</th>
+                        <th>Driver</th>
+                        <th class="sticky-col">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="todayTripsBody">
+                    @if (ViewBag.TodayTrips != null)
+                    {
+                        var list = ViewBag.TodayTrips as IEnumerable<dynamic>;
+                        if (list != null && list.Any())
+                        {
+                            int tripCount = 0;
+                            foreach (dynamic trip in list)
+                            {
+                                tripCount++;
+                                string bodyNo = "—";
+                                if (trip.Bus != null) { try { bodyNo = trip.Bus.Body_Bus_Number?.ToString() ?? "—"; } catch { } }
+
+                                string driverName = "—";
+                                if (trip.Driver != null)
+                                {
+                                    try
+                                    {
+                                        string raw = trip.Driver.Full_Name?.ToString() ?? "";
+                                        driverName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(raw.ToLower());
+                                    }
+                                    catch { }
+                                }
+                                <tr data-trip-id="@trip.Trip_ID">
+                                    <td><span class="db-trip-id">#@trip.Trip_ID</span></td>
+                                    <td style="font-weight:600;">@(trip.Bus != null ? trip.Bus.Bus_Name : "—")</td>
+                                    <td style="color:var(--text-secondary);">@bodyNo</td>
+                                    <td>@trip.Origin</td>
+                                    <td>@trip.Destination</td>
+                                    <td><span class="db-mono">@trip.Scheduled_Departure_Time.ToString("hh:mm tt")</span></td>
+                                    <td style="color:var(--text-secondary);">@driverName</td>
+                                    <td class="sticky-col"><span class="db-pill-active">Active</span></td>
+                                </tr>
+                            }
+                            <script>document.getElementById('tripCountBadge').textContent = '@tripCount trip@(((IEnumerable<dynamic>)list).Count() != 1 ? "s" : "")';</script>
+                        }
+                        else
+                        {
+                            <tr><td colspan="8" style="padding:20px 16px; color:var(--text-muted); font-size:13px; text-align:center;">No scheduled trips for today.</td></tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* LOWER 2x2 *@
+    <div class="db-lower-grid">
+
+        @* SALES REGISTRY *@
+        <div class="db-card" style="display: flex; flex-direction: column;">
+            <div class="db-card-header">
+                <h5 class="db-card-title"><i class="fas fa-cash-register"></i> Company Sales Registry</h5>
+                <span class="db-live-feed-badge"><span class="db-live-dot"></span> Live</span>
+            </div>
+            <div style="flex: 1;">
+                <table class="db-rev-table">
+                    <tbody>
+                        <tr class="db-today">
+                            <td class="db-rev-today-date">Today (@DateTime.Now.ToString("MMM dd, yyyy"))</td>
+                            <td class="db-rev-today-amount" id="liveTodayRevenueField">₱0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="db-rev-date">Yesterday (@DateTime.Now.AddDays(-1).ToString("MMM dd, yyyy"))</td>
+                            <td class="db-rev-amount" id="revDay1">₱0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="db-rev-date">@DateTime.Now.AddDays(-2).ToString("MMM dd, yyyy")</td>
+                            <td class="db-rev-amount" id="revDay2">₱0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="db-rev-date">@DateTime.Now.AddDays(-3).ToString("MMM dd, yyyy")</td>
+                            <td class="db-rev-amount" id="revDay3">₱0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="db-rev-date">@DateTime.Now.AddDays(-4).ToString("MMM dd, yyyy")</td>
+                            <td class="db-rev-amount" id="revDay4">₱0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="db-rev-date">@DateTime.Now.AddDays(-5).ToString("MMM dd, yyyy")</td>
+                            <td class="db-rev-amount" id="revDay5">₱0.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="db-card-footer">
+                <a href="/Home/AuditLogs?tab=sales">Older records archived. View Sales Report &rarr;</a>
+            </div>
+        </div>
+
+        @* Recent Activities Card — Synchronized Baseline *@
+        <div class="db-card" style="background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); border: 1px solid #e2e8f0;">
+            <div class="db-card-header" style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9;">
+                <h5 class="db-card-title" style="margin: 0; font-size: 15px; font-weight: 700; color: #0f1c3f;">
+                    <i class="fas fa-history" style="color: #3b82f6; margin-right: 8px;"></i> Recent Activities
+                </h5>
+            </div>
+            <div id="recentActivityList" class="db-act-list" style="max-height: 400px; overflow-y: auto;">
+                @if (ViewBag.RecentActivities != null)
+                {
+                    foreach (var log in ViewBag.RecentActivities)
+                    {
+                        string actionLower = (log.Action ?? "").ToLower();
+                        string iconClass = "fa-sign-in-alt";
+                        string colorStyle = "background-color: #ecfdf5; color: #10b981;"; // Login Green Accent
+
+                        if (actionLower.Contains("logout") || actionLower.Contains("cancel") || actionLower.Contains("void"))
+                        {
+                            iconClass = "fa-sign-out-alt";
+                            colorStyle = "background-color: #fef2f2; color: #ef4444;"; // System Break Red Accent
+                        }
+
+                        <div class="activity-item-row" data-log-id="@log.Log_ID" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f1f5f9;">
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div class="stat-icon-wrapper" style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; @colorStyle">
+                                    <i class="fas @iconClass"></i>
+                                </div>
+                                <div>
+                                    <h6 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #0f1c3f; text-transform: capitalize;">@actionLower</h6>
+                                    <p style="margin: 3px 0 0; font-size: 12px; color: #64748b; font-weight: 500;">
+                                        @(log.User?.Employee?.Full_Name ?? "System") — @(log.User?.Employee?.Job_Position ?? "Admin")
+                                    </p>
+                                </div>
+                            </div>
+                            <span style="font-size: 11.5px; color: #94a3b8; font-weight: 600; font-family: monospace;">
+                                @log.Timestamp.ToString("hh:mm:ss tt").ToLower()
+                            </span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        @functions {
+            string GetBg(string a)
+            {
+                string s = (a ?? "").ToUpper();
+                if (s.Contains("LOGIN")) return "#f0fdf4";
+                if (s.Contains("LOGOUT")) return "#f8fafc";
+                if (s.Contains("CANCEL")) return "#fef2f2";
+                if (s.Contains("DISPATCH")) return "#eff6ff";
+                if (s.Contains("LOCK")) return "#fff1f2";
+                if (s.Contains("CREATE")) return "#fefce8";
+                return "#ffffff";
+            }
+
+            string GetIcon(string a)
+            {
+                string s = (a ?? "").ToUpper();
+                if (s.Contains("LOGIN")) return "fas fa-sign-in-alt";
+                if (s.Contains("LOGOUT")) return "fas fa-sign-out-alt";
+                if (s.Contains("CANCEL")) return "fas fa-times-circle";
+                if (s.Contains("DISPATCH")) return "fas fa-bus";
+                if (s.Contains("LOCK")) return "fas fa-lock";
+                return "fas fa-bolt"; // CREATE or others
+            }
+        }
+
+        @* CONFIGURED ROUTES *@
+        <div class="db-card">
+            <div class="db-card-header">
+                <h5 class="db-card-title"><i class="fas fa-map-signs"></i> Configured Routes</h5>
+                <span class="db-rotate-badge"><i class="fas fa-sync-alt" style="font-size:9px; margin-right:3px;"></i> Auto-rotate</span>
+            </div>
+            <div class="db-routes-list" id="routesList"></div>
+        </div>
+
+        @* COMPLETED TRIPS — row insertion only *@
+        <div class="db-card">
+            <div class="db-card-header">
+                <h5 class="db-card-title"><i class="fas fa-check-double"></i> Completed Trips</h5>
+                <span class="db-count-badge" id="compCountBadge">0 trips</span>
+            </div>
+            <div class="db-comp-list" id="completedTripsList"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // ===================== HELPERS =====================
+
+        // Grab the beautifully formatted branch name we created in C# (e.g., "Tacloban")
+    const myLocation = '@(ViewBag.BranchName ?? "Unknown")'.replace(' Branch', '').trim();
+    function fmt(v) {
+        return '₱' + (parseFloat(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function titleCase(str) {
+        if (!str) return '—';
+        return str.toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    }
+
+    function bumpEl(el) {
+        if (!el) return;
+        el.classList.remove('bump');
+        void el.offsetWidth; // reflow
+        el.classList.add('bump');
+        setTimeout(function () { el.classList.remove('bump'); }, 300);
+    }
+
+    // ===================== WEATHER =====================
+    function fetchWeather() {
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=10.3157&longitude=123.8854&current_weather=true')
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d || !d.current_weather) return;
+                var temp = Math.round(d.current_weather.temperature) + '°C';
+                var code = d.current_weather.weathercode;
+                var icon = weatherIcon(code);
+
+                // update topbar chip
+                var chips = document.querySelectorAll('.topbar-chip');
+                chips.forEach(function (chip) {
+                    var i = chip.querySelector('i');
+                    var s = chip.querySelector('span');
+                    var strong = chip.querySelector('strong');
+                    if (i && (i.className.includes('cloud') || i.className.includes('sun') || i.className.includes('rain') || i.className.includes('bolt') || i.className.includes('smog'))) {
+                        i.className = icon + ' weather-bounce';
+                        if (strong) strong.textContent = temp;
+                    }
+                });
+            }).catch(function () {});
+    }
+
+
+        // Centralized mapping logic for all your actions
+    // 1. THIS FUNCTION MUST MATCH YOUR RAZOR @@functions COLOR LOGIC
+function getLogStyle(action) {
+    let a = (action || "").toUpperCase();
+    
+    // These hex codes MUST match the return values in your Razor GetBg()
+    let bg = a.includes("LOGIN") ? "#f0fdf4" : 
+             a.includes("LOGOUT") ? "#f8fafc" : 
+             a.includes("CANCEL") ? "#fef2f2" : 
+             a.includes("DISPATCH") ? "#eff6ff" : 
+             a.includes("LOCK") ? "#fff1f2" : 
+             (a.includes("CREATE") || a.includes("SALE")) ? "#fefce8" : "#ffffff";
+
+    let icon = a.includes("LOGIN") ? "fas fa-sign-in-alt" : 
+               a.includes("LOGOUT") ? "fas fa-sign-out-alt" : 
+               a.includes("CANCEL") ? "fas fa-times-circle" : 
+               a.includes("DISPATCH") ? "fas fa-bus" : 
+               a.includes("LOCK") ? "fas fa-lock" : "fas fa-bolt";
+               
+    return { bg: bg, icon: icon };
+}
+
+
+
+
+    function pollTableCleanup() {
+        fetch('/Home/GetActiveTripIds?_t=' + new Date().getTime())
+            .then(function(r) { return r.json(); })
+            .then(function(activeIds) {
+                // Find all rows currently in the table
+                var rows = document.querySelectorAll('#todayTripsBody tr');
+
+                rows.forEach(function(row) {
+                    var tripId = row.getAttribute('data-trip-id');
+
+                    // If the row on screen is NOT in the database list, it's cancelled
+                    if (tripId && !activeIds.includes(tripId)) {
+                        // Fade out
+                        row.style.transition = "opacity 0.5s ease";
+                        row.style.opacity = "0";
+
+                        // Remove from DOM
+                        setTimeout(function() {
+                            row.remove();
+
+                            // Update the counter badge
+                            var rowsLeft = document.querySelectorAll('#todayTripsBody tr').length;
+                            document.getElementById('tripCountBadge').textContent = rowsLeft + (rowsLeft === 1 ? ' trip' : ' trips');
+                        }, 500);
+                    }
+                });
+            });
+    }
+
+    // Check every 3 seconds
+    setInterval(pollTableCleanup, 3000);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // 2. THE BULLETPROOF POLLING LOGIC
+    setInterval(function() {
+        $.ajax({
+            url: '@Url.Action("GetRecentLogs", "Home")',
+            type: 'GET',
+            success: function(data) {
+                if (!data || data.length === 0) return;
+
+                var listContainer = $('#recentActivityList');
+
+                // 1. Grab the ID of the topmost log currently visible on the user's screen
+                var currentTopId = listContainer.children().first().data('log-id');
+
+                // 2. Grab the ID of the absolute newest log returned by the server
+                var serverTopId = data[0].logId;
+
+                // 🚀 SMART STATE GUARD: If the top IDs match, absolutely nothing new happened.
+                // Exit immediately to prevent UI jumps or sorting breaks!
+                if (currentTopId === serverTopId) {
+                    return;
+                }
+
+                // 3. If a new log is detected, build a fresh HTML block following the server's exact order
+                var freshHtml = "";
+
+                data.forEach(function(log) {
+                    let actionLower = log.action.toLowerCase();
+                    let iconClass = "fa-sign-in-alt";
+                    let colorStyle = "background-color: #ecfdf5; color: #10b981;"; // Login Green
+
+                    if (actionLower.includes("logout") || actionLower.includes("cancel") || actionLower.includes("void")) {
+                        iconClass = "fa-sign-out-alt";
+                        colorStyle = "background-color: #fef2f2; color: #ef4444;"; // System Red
+                    }
+
+                    freshHtml += `
+                        <div class="activity-item-row" data-log-id="${log.logId}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f1f5f9;">
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div class="stat-icon-wrapper" style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; ${colorStyle}">
+                                    <i class="fas ${iconClass}"></i>
+                                </div>
+                                <div>
+                                    <h6 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #0f1c3f; text-transform: capitalize;">${actionLower}</h6>
+                                    <p style="margin: 3px 0 0; font-size: 12px; color: #64748b; font-weight: 500;">${log.userName} — ${log.jobPosition}</p>
+                                </div>
+                            </div>
+                            <span style="font-size: 11.5px; color: #94a3b8; font-weight: 600; font-family: monospace;">${log.timestamp.toLowerCase()}</span>
+                        </div>`;
+                });
+
+                // 4. Inject the perfectly ordered timeline block into the DOM
+                listContainer.html(freshHtml);
+            },
+            error: function(err) {
+                console.error("Activity stream polling link interrupted:", err);
+            }
+        });
+    }, 3000);
+
+
+
+    function weatherIcon(code) {
+        if (code === 0) return 'fas fa-sun';
+        if (code <= 3)  return 'fas fa-cloud-sun';
+        if (code <= 48) return 'fas fa-smog';
+        if (code <= 67) return 'fas fa-cloud-rain';
+        if (code <= 82) return 'fas fa-cloud-showers-heavy';
+        if (code <= 99) return 'fas fa-bolt';
+        return 'fas fa-cloud';
+    }
+
+    fetchWeather();
+    setInterval(fetchWeather, 300000);
+
+    // ===================== STATS POLLING =====================
+    function pollStats() {
+    // We attach &branch=Tacloban so the server knows what to filter!
+    fetch(`/Home/GetDashboardStats?branch=${encodeURIComponent(myLocation)}&_t=` + new Date().getTime())
+        .then(function (r) { return r.json(); })
+            .then(function (d) {
+
+                    console.log("Stats received from server:", d);
+
+                if (d.error) return; // Stop if unauthorized
+
+
+                updateStat('statTotalReservations', d.totalReservations);
+                updateStat('statScheduledTrips',    d.scheduledTrips);
+                updateStat('statInTransit',         d.inTransitBuses);
+                updateStat('statCancelled',         d.cancelledTrips);
+            }).catch(function () {});
+    }
+
+    function updateStat(id, newVal) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var cur = parseInt(el.textContent) || 0;
+        if (cur === newVal) return;
+        bumpEl(el);
+        setTimeout(function () { el.textContent = newVal; }, 130);
+    }
+
+    setInterval(pollStats, 2000);
+    pollStats();
+
+    // ===================== SALES REGISTRY =====================
+        var _lastTodayRev = -1;
+
+    function fmt(val) {
+        return '₱' + parseFloat(val).toLocaleString(undefined, { minimumFractionDigits: 2 });
+    }
+
+    function bumpEl(el) {
+        el.classList.add('bump');
+        setTimeout(function() { el.classList.remove('bump'); }, 300);
+    }
+
+        function pollSales() {
+        // We removed ?branch=${encodeURIComponent(myBranchString)}
+        // because the server-side method uses HttpContext.Session to identify the user.
+        fetch('/Home/GetSalesRegistry?_t=' + new Date().getTime())
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            // Update Today's Revenue
+            var todayEl = document.getElementById('liveTodayRevenueField');
+            if (todayEl && d.today !== _lastTodayRev) {
+                if (_lastTodayRev >= 0) bumpEl(todayEl);
+                _lastTodayRev = d.today;
+                todayEl.textContent = fmt(d.today);
+            }
+
+            // Update Historic Days (Day 1 to 5)
+            var map = {
+                revDay1: d.day1,
+                revDay2: d.day2,
+                revDay3: d.day3,
+                revDay4: d.day4,
+                revDay5: d.day5
+            };
+
+            Object.keys(map).forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.textContent = fmt(map[id]);
+            });
+        })
+        .catch(function (err) {
+            console.error("Sales Fetch Error:", err);
+        });
+    }
+
+    pollSales();
+    setInterval(pollSales, 2000);
+
+    // ===================== ACTIVITY — row insertion only =====================
+    var _activitySeenIds = new Set();
+    var _activityRows = [];
+    var MAX_ACT_ROWS = 10;
+    var _highestIdSeen = 0;
+
+    function getActMeta(action) {
+        if (!action) return { iconClass: 'db-act-login', faIcon: 'fas fa-sign-in-alt', tint: 'tint-green', label: 'Activity' };
+        var a = action.toUpperCase();
+        if (a === 'LOGIN')
+            return { iconClass: 'db-act-login',    faIcon: 'fas fa-sign-in-alt',  tint: 'tint-green',  label: 'Login' };
+        if (a === 'LOGOUT')
+            return { iconClass: 'db-act-logout',   faIcon: 'fas fa-sign-out-alt', tint: 'tint-gray',   label: 'Logout' };
+        if (a === 'CANCEL' || a === 'DEACTIVATE_USER' || a === 'LOCK')
+            return { iconClass: 'db-act-lock',     faIcon: 'fas fa-ban',          tint: 'tint-red',    label: titleCase(action.replace(/_/g, ' ')) };
+        if (a === 'CREATE' || a.includes('RESERVATION') || a.includes('BOOKING'))
+            return { iconClass: 'db-act-create',   faIcon: 'fas fa-plus',         tint: 'tint-yellow', label: 'Booking Created' };
+        if (a.includes('DISPATCH') || a.includes('TRANSIT'))
+            return { iconClass: 'db-act-dispatch', faIcon: 'fas fa-bus',          tint: 'tint-yellow', label: 'Bus Dispatched' };
+        return { iconClass: 'db-act-create', faIcon: 'fas fa-bolt', tint: 'tint-yellow', label: titleCase(action.replace(/_/g, ' ')) };
+    }
+
+    function buildActRow(log) {
+        var meta = getActMeta(log.action);
+        var row = document.createElement('div');
+        row.className = 'db-act-row ' + meta.tint;
+        row.setAttribute('data-log-id', log.id || log.Id);
+
+        var userRole = log.role || log.Role || log.jobPosition || log.JobPosition || log.position || log.Position || 'Staff';
+        var fullName = log.fullName || log.FullName || log.userName || log.UserName || 'User';
+        var displayName = titleCase(fullName) + ' — ' + titleCase(userRole);
+
+        row.innerHTML =
+            '<div class="db-act-icon ' + meta.iconClass + '"><i class="' + meta.faIcon + '"></i></div>' +
+            '<div style="flex:1;">' +
+                '<div class="db-act-action">' + meta.label + '</div>' +
+                '<div class="db-act-user">' + displayName + '</div>' +
+            '</div>' +
+            '<div class="db-act-time">' + (log.timestamp || log.Timestamp || '') + '</div>';
+        return row;
+    }
+
+    function extractId(log) {
+        return parseInt(log.id || log.Id || log.log_ID || log.Log_ID) || 0;
+    }
+
+    function pollActivity() {
+    fetch(`/Home/GetAuditLog?branch=${encodeURIComponent(myLocation)}&_t=` + new Date().getTime(), {
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (logs) {
+            if (!logs || !logs.length) return;
+
+            var list = document.getElementById('recentActivityList');
+            if (!list) return;
+
+            // 🛑 FORCE JAVASCRIPT SORT: Guarantees the absolute highest ID (newest action) is always index 0
+            logs.sort(function(a, b) {
+                return extractId(b) - extractId(a);
+            });
+
+            // SCENARIO 1: First time building the widget
+            if (_activitySeenIds.size === 0) {
+                list.innerHTML = '';
+                var shown = logs.slice(0, MAX_ACT_ROWS);
+                shown.forEach(function (log) {
+                    var id = extractId(log);
+                    _activitySeenIds.add(id);
+                    if (id > _highestIdSeen) _highestIdSeen = id;
+                    list.appendChild(buildActRow(log));
+                    _activityRows.push(id);
+                });
+                return;
+            }
+
+            // SCENARIO 2: Polling every 2 seconds. ONLY accept logs with an ID higher than we've seen.
+            var newOnes = logs.filter(function (l) {
+                var id = extractId(l);
+                return id > _highestIdSeen && !_activitySeenIds.has(id);
+            });
+
+            // If there are no strictly new IDs, DO ABSOLUTELY NOTHING. (No flickering!)
+            if (newOnes.length === 0) return;
+
+            // Sort the strictly new ones ascending so they stack cleanly into the UI
+            newOnes.sort(function(a, b) { return extractId(a) - extractId(b); });
+
+            newOnes.forEach(function (log) {
+                var id = extractId(log);
+                _activitySeenIds.add(id);
+                if (id > _highestIdSeen) _highestIdSeen = id;
+
+                list.insertBefore(buildActRow(log), list.firstChild);
+                _activityRows.unshift(id);
+
+                if (_activityRows.length > MAX_ACT_ROWS) {
+                    var removeId = _activityRows.pop();
+                    var oldRow = list.querySelector('[data-log-id="' + removeId + '"]');
+                    if (oldRow) oldRow.remove();
+                }
+            });
+        }).catch(function (e) { console.error("Activity Polling Error:", e); });
+    }
+
+    // Safely start the polling timer
+    if (!window.actTimer) {
+        pollActivity();
+        window.actTimer = setInterval(pollActivity, 2000);
+    }
+
+    // ===================== ROUTES — auto rotate every 3 mins =====================
+    var _allRoutes = [];
+    var _routePageIndex = 0;
+    var ROUTES_PER_PAGE = 5;
+
+    function renderRoutes() {
+        var list = document.getElementById('routesList');
+        if (!list || !_allRoutes.length) return;
+        var start = _routePageIndex * ROUTES_PER_PAGE;
+        var slice = _allRoutes.slice(start, start + ROUTES_PER_PAGE);
+        list.innerHTML = '';
+        slice.forEach(function (r) {
+            var row = document.createElement('div');
+            row.className = 'db-route-row';
+            row.innerHTML =
+                '<span class="db-route-origin">' + (r.origin || '') + '</span>' +
+                '<span class="db-route-dest">' + (r.destination || '') + '</span>' +
+                '<span class="db-route-fare">' + fmt(r.baseFare) + '</span>' +
+                '<span class="db-route-km">' + (r.distanceKm ? r.distanceKm + ' km' : '—') + '</span>';
+            list.appendChild(row);
+        });
+    }
+
+    fetch(`/Home/GetAllRoutes?origin=${encodeURIComponent(myLocation)}`)
+    .then(function (r) { return r.json(); })
+        .then(function (d) { _allRoutes = d || []; renderRoutes(); })
+        .catch(function () {});
+
+    setInterval(function () {
+        if (_allRoutes.length <= ROUTES_PER_PAGE) return;
+        _routePageIndex = (_routePageIndex + 1) % Math.ceil(_allRoutes.length / ROUTES_PER_PAGE);
+        renderRoutes();
+    }, 180000); // 3 minutes
+
+    // ===================== COMPLETED TRIPS — row insertion only =====================
+    var _compSeenIds = new Set();
+    var _compRows = [];
+    var MAX_COMP_ROWS = 10;
+    var DEFAULT_COMP_ROWS = 5;
+
+    function buildCompRow(t) {
+        var row = document.createElement('div');
+        row.className = 'db-comp-row';
+        var tripId = t.tripId || t.TripId || t.Trip_ID || t.trip_ID || '';
+        row.setAttribute('data-trip-id', tripId);
+
+        // Expanded fallback to catch whoever marked the trip completed from C#
+        var dispatcher = t.dispatcherName || t.DispatcherName || t.markedBy || t.MarkedBy || t.dispatcher || t.Dispatcher || t.completedBy || t.CompletedBy || 'Unknown Dispatcher';
+
+        row.innerHTML =
+            '<div class="db-comp-dot"></div>' +
+            '<div style="flex:1;">' +
+                '<div class="db-comp-name">' + (t.origin || t.Origin || '') + ' → ' + (t.destination || t.Destination || '') + '</div>' +
+                '<div class="db-comp-sub">' + tripId + ' — ' + titleCase(dispatcher) + '</div>' +
+            '</div>' +
+            '<div style="text-align:right;">' +
+                '<div class="db-comp-time">' + (t.completedTime || t.CompletedTime || '') + '</div>' +
+                '<span class="db-verified" style="margin-top:2px; display:inline-block;">Verified</span>' +
+            '</div>';
+        return row;
+    }
+
+    function initCompletedTrips(trips) {
+        var list = document.getElementById('completedTripsList');
+        if (!list) return;
+        list.innerHTML = '';
+        _compRows = [];
+        _compSeenIds.clear();
+        if (!trips.length) {
+            list.innerHTML = '<div style="padding:20px 16px; color:var(--text-muted); font-size:13px; text-align:center;">No completed trips yet.</div>';
+            return;
+        }
+
+        trips.slice(0, MAX_COMP_ROWS).forEach(function (t) {
+            var id = t.tripId || t.TripId || t.Trip_ID || t.trip_ID;
+            _compSeenIds.add(id);
+            var row = buildCompRow(t);
+            list.appendChild(row);
+            _compRows.push(id);
+        });
+        document.getElementById('compCountBadge').textContent = Math.min(trips.length, MAX_COMP_ROWS) + ' trips';
+    }
+
+    function pollCompletedTrips() {
+    fetch(`/Home/GetCompletedTrips?branch=${encodeURIComponent(myLocation)}&_t=` + new Date().getTime())
+        .then(function (r) { return r.json(); })
+            .then(function (trips) {
+                if (!trips) return;
+
+                if (_compSeenIds.size === 0) {
+                    initCompletedTrips(trips);
+                    return;
+                }
+
+                var list = document.getElementById('completedTripsList');
+                if (!list) return;
+
+                var newOnes = trips.filter(function (t) { return !_compSeenIds.has(t.tripId || t.TripId || t.Trip_ID || t.trip_ID); });
+                if (!newOnes.length) return;
+
+                newOnes.forEach(function (t) {
+                    var id = t.tripId || t.TripId || t.Trip_ID || t.trip_ID;
+                    _compSeenIds.add(id);
+                    var row = buildCompRow(t);
+
+                    var placeholder = list.querySelector('div:not(.db-comp-row)');
+                    if (placeholder) placeholder.remove();
+
+                    list.insertBefore(row, list.firstChild);
+                    _compRows.unshift(id);
+
+                    if (_compRows.length > MAX_COMP_ROWS) {
+                        var removeId = _compRows.pop();
+                        var oldRow = list.querySelector('[data-trip-id="' + removeId + '"]');
+                        if (oldRow) oldRow.remove();
+                    }
+                });
+
+                document.getElementById('compCountBadge').textContent = _compRows.length + ' trips';
+            }).catch(function () {});
+    }
+
+    // Initial load immediately on page open
+    pollCompletedTrips();
+    // Subsequent polling
+    setInterval(pollCompletedTrips, 8000);
+
+    // ===================== SALES UPDATE BRIDGE =====================
+    window.triggerDashboardSalesUpdate = function () {
+        pollSales();
+        pollStats();
+    };
+
+
+
+
+
+
+
+
+</script>

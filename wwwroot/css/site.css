@@ -1,0 +1,77 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+
+
+
+/* ========== GLOBAL TOAST NOTIFICATION ENGINE ========== */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10001;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 380px;
+    max-width: 90%;
+    background: #ff9800; /* Amber Warning theme */
+    color: white;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    /* Hardware acceleration baseline entry position (hidden off-screen to the right) */
+    transform: translateX(calc(100% + 40px));
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+}
+
+    /* Row text styling adjustments inside the global toast */
+    .toast-notification strong {
+        color: #fff;
+    }
+
+    /* Show State: Glide in right-to-left with snap overshoot bounce */
+    .toast-notification.active {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    /* Closing State: Smoothly glide back out left-to-right off-screen */
+    .toast-notification.closing {
+        transform: translateX(calc(100% + 40px));
+        opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }

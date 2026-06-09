@@ -1,0 +1,2965 @@
+﻿    @using System.Text.Encodings.Web
+    @using PUBReservationSystem.Models
+    @{
+        ViewData["Title"] = "Reservations";
+        Layout = "_Layout";
+
+        var role = Context.Session.GetString("Role") ?? "";
+        bool isAdmin = role == "Admin";
+    }
+
+    <style>
+        /* =========================================
+               1. PAGE LOAD ANIMATIONS
+               ========================================= */
+        @@keyframes pageEnter {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@keyframes rowSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @@keyframes fadeSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            animation: pageEnter 0.4s 0.05s both;
+        }
+
+        .sys-alert-banner {
+            animation: pageEnter 0.4s 0.10s both;
+        }
+
+        .filter-toolbar-card {
+            animation: pageEnter 0.4s 0.20s both;
+        }
+
+        .sys-card {
+            animation: pageEnter 0.5s cubic-bezier(0.22,1,0.36,1) 0.25s both;
+        }
+
+        table.sys-table tbody tr {
+            animation: rowSlideIn 0.35s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        tbody tr:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        tbody tr:nth-child(2) {
+            animation-delay: 0.10s;
+        }
+
+        tbody tr:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        tbody tr:nth-child(4) {
+            animation-delay: 0.20s;
+        }
+
+        tbody tr:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        #reservationsTableBody tr {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+            #reservationsTableBody tr.slide-standby {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+
+            #reservationsTableBody tr.hide-row {
+                display: none !important;
+            }
+
+        /* =========================================
+               2. LAYOUT & SPACING
+               ========================================= */
+        .res-layout-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .reservations-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* =========================================
+               3. DASHBOARD-STYLE STAT CARDS
+               ========================================= */
+        .dash-style-card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 22px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f0f2f5;
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+            transform: translateY(15px);
+            animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+            .dash-style-card:nth-child(1) {
+                animation-delay: 0.1s;
+            }
+
+            .dash-style-card:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+
+            .dash-style-card:nth-child(3) {
+                animation-delay: 0.3s;
+            }
+
+            .dash-style-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 4px;
+                transition: height 0.3s ease;
+            }
+
+            .dash-style-card.card-blue::before {
+                background: #3b82f6;
+            }
+
+            .dash-style-card.card-green::before {
+                background: #10b981;
+            }
+
+            .dash-style-card.card-red::before {
+                background: #ef4444;
+            }
+
+            .dash-style-card:hover {
+                transform: translateY(-5px);
+                border-color: transparent;
+            }
+
+            .dash-style-card.card-blue:hover {
+                box-shadow: 0 10px 20px rgba(59, 130, 246, 0.12);
+            }
+
+            .dash-style-card.card-green:hover {
+                box-shadow: 0 10px 20px rgba(16, 185, 129, 0.12);
+            }
+
+            .dash-style-card.card-red:hover {
+                box-shadow: 0 10px 20px rgba(239, 68, 68, 0.12);
+            }
+
+        .stat-icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 18px;
+            flex-shrink: 0;
+        }
+
+        .icon-blue {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .icon-green {
+            background: #ecfdf5;
+            color: #10b981;
+        }
+
+        .icon-red {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .stat-text h3 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0f1c3f;
+            margin: 0 0 4px 0;
+            line-height: 1;
+        }
+
+        .stat-text p {
+            margin: 0;
+            font-size: 12.5px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        /* =========================================
+               4. FILTER TOOLBAR & ALERTS
+               ========================================= */
+        .sys-alert-banner {
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-xs);
+            background: var(--navy-50, #eff6ff);
+            color: var(--navy-700, #1e3a8a);
+            border-left: 4px solid var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .filter-toolbar-card {
+            background: var(--surface);
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            /* Removed flex-wrap */
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: border-color 0.2s;
+        }
+
+            .form-control:focus {
+                border-color: var(--accent);
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(59,108,247,0.1);
+            }
+
+        /* =========================================
+               5. TABLE & MODAL SYSTEM
+               ========================================= */
+        .sys-card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+        }
+
+        .sys-card-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--navy-800, #0f1c3f);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .sys-count-badge {
+            background: var(--accent-soft, #e8eeff);
+            color: var(--accent, #3b6cf7);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .res-status-pill {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-confirmed {
+            background: var(--green-soft, #e3f9f1);
+            color: var(--green, #0fa66e);
+        }
+
+        .status-cancelled {
+            background: var(--red-soft, #fdeaea);
+            color: var(--red, #e0413a);
+        }
+
+        .status-completed {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .sys-table-wrap {
+            overflow-x: auto;
+            overflow-y: hidden;
+            width: 100%;
+            padding-bottom: 8px;
+        }
+
+            .sys-table-wrap::-webkit-scrollbar {
+                height: 8px;
+            }
+
+            .sys-table-wrap::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 10px;
+            }
+
+            .sys-table-wrap::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 10px;
+            }
+
+        table.sys-table {
+            white-space: nowrap;
+            min-width: 1100px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+            table.sys-table th, table.sys-table td {
+                padding: 13px 16px;
+                border-bottom: 1px solid var(--border);
+                font-size: 13px;
+            }
+
+            table.sys-table thead th {
+                background: #f8fafd;
+                color: var(--text-muted, #94a3b8);
+                font-size: 10.5px;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+
+            table.sys-table tbody tr:hover td {
+                background: #f0f4ff;
+            }
+
+        .ref-id-text {
+            font-weight: 700;
+            color: var(--accent, #3b6cf7);
+            font-size: 12px;
+        }
+
+        .sticky-action-col {
+            position: sticky;
+            right: 0;
+            z-index: 2;
+            background: #fff;
+            box-shadow: -4px 0 12px rgba(15,28,63,0.04);
+        }
+
+        table.sys-table thead th.sticky-action-col {
+            background: #f8fafd;
+            z-index: 3;
+        }
+
+        table.sys-table tbody tr:hover td.sticky-action-col {
+            background: #f0f4ff;
+        }
+
+        @@keyframes newRowHighlight {
+            0% {
+                background: rgba(59,108,247,0.12);
+            }
+
+            100% {
+                background: transparent;
+            }
+        }
+
+        .new-row-flash td {
+            animation: newRowHighlight 2s ease forwards;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                margin-bottom: 6px;
+                text-transform: uppercase;
+            }
+
+        /* =========================================
+               THE PRINT FIX: Bulletproof Print Settings
+               ========================================= */
+       /* =========================================
+           THE PRINT FIX: Bulletproof Print Settings
+           ========================================= */
+        /* =========================================
+           THE PRINT FIX: Bulletproof Print Settings
+           ========================================= */
+        #printArea {
+            display: none;
+        }
+
+        @@media print {
+            /* 1. Hide EVERY direct child of the body EXCEPT the print area */
+            body > *:not(#printArea) {
+                display: none !important;
+            }
+
+            /* 2. THE FIX: Specifically target the active modal to beat its CSS priority */
+            .modal-overlay, 
+            .modal-overlay.show,
+            #successModal {
+                display: none !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+            }
+        
+            /* 3. Reset the body background to ensure it's clean */
+            body { 
+                background: white !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+            }
+
+            /* 4. Show the print area perfectly */
+            #printArea {
+                display: block !important;
+                position: relative !important;
+                width: 100% !important;
+                visibility: visible !important;
+                margin: 0 auto !important;
+                padding: 20px !important;
+            }
+
+            #printArea * {
+                visibility: visible !important;
+            }
+
+            /* 5. Remove default browser margins from the paper */
+            @@page { margin: 0; }
+        }
+
+        /* =========================================
+               MODALS & BUS SEAT STYLES
+               ========================================= */
+        .modal-overlay {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 28, 63, 0.4) !important;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999 !important;
+            backdrop-filter: blur(2px);
+        }
+
+            .modal-overlay.show {
+                display: flex !important;
+            }
+
+        .sys-modal {
+            background: #ffffff !important;
+            border-radius: 12px !important;
+            width: 100% !important;
+            max-width: 450px !important;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+            margin: 20px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 15px 20px !important;
+            border-bottom: 1px solid #f0f2f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px !important;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 15px 20px !important;
+            border-top: 1px solid #f0f2f5;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background: #fcfcfc;
+        }
+
+        .modal-body .form-control {
+            padding: 8px 12px !important;
+            font-size: 13px !important;
+        }
+
+        .modal-header h4 {
+            margin: 0 !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
+        }
+
+        .seat-grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            max-width: 280px;
+            margin: 0 auto;
+            justify-items: center;
+        }
+
+        .seat {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .seat.aisle {
+                background: transparent !important;
+                border: none !important;
+                cursor: default;
+                width: 20px;
+            }
+
+            .seat.available {
+                background: #e3f9f1;
+                border: 2px solid #0fa66e;
+                color: #0fa66e;
+            }
+
+                .seat.available:hover {
+                    background: #0fa66e;
+                    color: #ffffff;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 10px rgba(15, 166, 110, 0.2);
+                }
+
+            .seat.selected {
+                background: #3b6cf7;
+                border: 2px solid #3b6cf7;
+                color: #ffffff;
+                transform: scale(1.05);
+            }
+
+            .seat.booked {
+                background: #f1f5f9;
+                border: 2px solid #cbd5e1;
+                color: #94a3b8;
+                cursor: not-allowed;
+                opacity: 0.7;
+            }
+
+        .seat-legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
+        #passengerModal .sys-modal {
+            max-width: 680px !important;
+        }
+
+        .passenger-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #ffffff;
+        }
+
+        .passenger-card-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--navy-800, #0f1c3f);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .passenger-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            align-items: end;
+        }
+
+            .passenger-grid .form-group {
+                margin-bottom: 0;
+            }
+
+        .fare-breakdown {
+            background: #f8fafd;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .fare-breakdown-title {
+            font-size: 12.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .fare-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13.5px;
+            color: #475569;
+            padding: 5px 0;
+        }
+
+            .fare-line.total {
+                margin-top: 10px;
+                padding-top: 12px;
+                border-top: 2px dashed #cbd5e1;
+                font-size: 16px;
+                font-weight: 800;
+                color: #0f1c3f;
+                align-items: center;
+            }
+
+                .fare-line.total span:last-child {
+                    color: var(--green, #0fa66e);
+                    font-size: 18px;
+                }
+
+        .seats-count {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .new-row-flash td.sticky-action-col {
+            animation: newRowStickyHighlight 2s ease forwards !important;
+        }
+
+        @@keyframes newRowStickyHighlight {
+            0% {
+                background: #e8eeff;
+            }
+
+            100% {
+                background: #ffffff;
+            }
+        }
+
+        /* Toast Notification */
+        .sys-toast {
+            position: fixed;
+            top: 20px;
+            right: -500px; /* ✅ FIXED: Increased from -300px so long error text hides completely */
+            width: max-content;
+            max-width: 420px; /* ✅ Prevent layout blowout on ultra-long strings */
+            white-space: normal; /* ✅ Allow clean multi-line wrapping if text gets too long */
+            background: #0f1c3f;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 99999;
+        }
+
+            .sys-toast.show {
+                right: 20px; /* Smoothly slides back to its natural view position */
+            }
+
+            .sys-toast i {
+                color: #10b981;
+            }
+
+        /* Smooth Fade Transition */
+        .modal-overlay {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+            .modal-overlay.show {
+                opacity: 1;
+                visibility: visible;
+            }
+
+        .sys-modal {
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .sys-modal {
+            transform: translateY(0);
+        }
+
+        /* 1. Base State (Ensure consistent borders) */
+        .dash-style-card {
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+        }
+
+            /* 2. Floating Lift Effect */
+            .dash-style-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            }
+
+            /* 3. Border-Color-On-Hover Logic */
+            .dash-style-card.card-blue:hover {
+                border-color: #3b82f6;
+            }
+
+            .dash-style-card.card-green:hover {
+                border-color: #10b981;
+            }
+
+            .dash-style-card.card-red:hover {
+                border-color: #ef4444;
+            }
+
+
+        /* =================================================================
+           RESERVATIONS REGISTER FILTER BAR CSS
+           ================================================================= */
+        /* =================================================================
+           ZOOM-SAFE FILTER TOOLBAR REGISTRY (WRAP ENGINE)
+           ================================================================= */
+        /* =================================================================
+           DELIBERATE TWO-TIERED RESERVATIONS TOOLBAR
+           ================================================================= */
+        .filter-toolbar-card {
+            display: flex;
+            flex-direction: column; /* Forces vertical stacking by default */
+            gap: 12px; /* Perfect spacing between Row 1 and Row 2 */
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px; /* Balanced breathing room around the controls */
+            box-shadow: 0 1px 3px rgba(15, 28, 63, 0.02);
+        }
+
+        /* Row 1 Layout Structure */
+        .filter-row-top {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap; /* Graceful wrapping for mobile screens only */
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* Row 2 Layout Structure */
+        .filter-row-bottom {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* Input Fields Constraints */
+        .res-search-wrap {
+            position: relative;
+            width: 240px; /* Uniform horizontal size control */
+        }
+
+            .res-search-wrap i {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #94a3b8;
+                font-size: 13px;
+                pointer-events: none;
+            }
+
+            .res-search-wrap .form-control {
+                padding-left: 36px !important;
+                height: 38px;
+                font-size: 13px;
+                border-radius: 8px;
+            }
+
+        .filter-dropdown {
+            width: 130px;
+            height: 38px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+
+        .filter-dropdown-operator {
+            width: 150px;
+            height: 38px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+
+        /* --- Uniform Action Buttons Styling --- */
+        .btn-filter-sys {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 38px;
+            padding: 0 14px;
+            font-size: 12.5px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+            .btn-filter-sys:hover {
+                background: #f8fafc;
+                border-color: #cbd5e1;
+                color: #0f172a;
+            }
+
+            /* --- Reset Button Base Styling --- */
+            .btn-filter-sys.btn-reset {
+                color: #64748b;
+                border-color: #e2e8f0;
+                background: #ffffff;
+                /* Smooth out all style properties during the hover transition state */
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+                /* ✅ THE FIX: Elevates the button into a glowing royal blue pill on hover */
+                .btn-filter-sys.btn-reset:hover {
+                    background: #2563eb !important; /* Deep rich corporate blue */
+                    border-color: #2563eb !important;
+                    color: #ffffff !important; /* Crisp high-contrast white text */
+                    /* Subtle mechanical lift physics */
+                    transform: translateY(-2px);
+                    /* Vibrant matching blue glow shadow layer */
+                    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+                }
+
+                    /* Ensure the inner sync icon inherits the white color layout rules smoothly */
+                    .btn-filter-sys.btn-reset:hover i {
+                        color: #ffffff !important;
+                    }
+
+            .btn-filter-sys.btn-cancel-all {
+                color: #ef4444;
+                border-color: #fca5a5;
+                background: #fef2f2;
+            }
+
+                .btn-filter-sys.btn-cancel-all:hover {
+                    background: #fee2e2;
+                    border-color: #ef4444;
+                }
+
+            .btn-filter-sys.btn-print {
+                color: #2563eb;
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+
+                .btn-filter-sys.btn-print:hover {
+                    background: #dbeafe;
+                }
+
+        .btn-primary-sys.btn-create {
+            height: 38px;
+            padding: 0 16px;
+            font-size: 12.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+
+        /* =================================================================
+           MICRO-INTERACTION: ICON SPIN ENGINE
+           ================================================================= */
+        @@keyframes dynamicIconSpin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* This class gets temporarily injected by JS on click */
+        .animate-spin-once {
+            animation: dynamicIconSpin 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+
+
+
+        /* =================================================================
+           HIGH-DENSITY ICON BUTTON ACTION ROW
+           ================================================================= */
+        .btn-action-icon {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+            /* Edit Icon Hover Physics */
+            .btn-action-icon.btn-edit-icon {
+                color: #2563eb;
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+
+                .btn-action-icon.btn-edit-icon:hover {
+                    background: #2563eb !important;
+                    border-color: #2563eb !important;
+                    color: #ffffff !important;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+                }
+
+            /* Cancel Icon Hover Physics */
+            .btn-action-icon.btn-cancel-icon {
+                color: #dc2626;
+                background: #fff5f5;
+                border-color: #fca5a5;
+            }
+
+                .btn-action-icon.btn-cancel-icon:hover {
+                    background: #dc2626 !important;
+                    border-color: #dc2626 !important;
+                    color: #ffffff !important;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+                }
+
+
+        /* =================================================================
+           RIGID TABLE CANVAS LAYOUT REINFORCEMENT
+           ================================================================= */
+
+        /* 1. Freeze column width engines */
+        .sys-table {
+            table-layout: fixed !important; /* Disables dynamic content-based resizing entirely */
+            width: 100% !important;
+            min-width: 1750px !important; /* Sets an unmoving canvas area for all 17 logging columns */
+            border-collapse: collapse;
+        }
+
+            /* 2. Lock down cell behaviors so text truncation happens inside fixed boundaries */
+            .sys-table th,
+            .sys-table td {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important; /* Places neat trailing dots if data gets pinched */
+                padding: 10px 8px !important;
+            }
+
+            /* 3. Explicitly allocate unmovable pixel sizes for every header index column */
+            .sys-table thead th:nth-child(1) {
+                width: 45px;
+            }
+            /* Checkbox */
+            .sys-table thead th:nth-child(2) {
+                width: 110px;
+            }
+            /* ID Reference */
+            .sys-table thead th:nth-child(3) {
+                width: 125px !important;
+            }
+            /* Trip ID */
+            .sys-table thead th:nth-child(4) {
+                width: 110px;
+            }
+            /* Bus Name */
+            .sys-table thead th:nth-child(5) {
+                width: 85px;
+            }
+            /* Body No. */
+            .sys-table thead th:nth-child(6) {
+                width: 140px;
+            }
+            /* Passenger */
+            .sys-table thead th:nth-child(7) {
+                width: 115px;
+            }
+            /* Contact */
+            .sys-table thead th:nth-child(8) {
+                width: 190px;
+            }
+            /* Route String */
+            .sys-table thead th:nth-child(9) {
+                width: 130px;
+            }
+            /* Created At */
+            .sys-table thead th:nth-child(10) {
+                width: 115px;
+            }
+            /* Travel Date */
+            .sys-table thead th:nth-child(11) {
+                width: 115px;
+            }
+            /* Departure Time */
+            .sys-table thead th:nth-child(12) {
+                width: 65px;
+            }
+            /* Seat Number */
+            .sys-table thead th:nth-child(13) {
+                width: 85px;
+            }
+            /* Type Badge */
+            .sys-table thead th:nth-child(14) {
+                width: 95px;
+            }
+            /* Total Fare Cost */
+            .sys-table thead th:nth-child(15) {
+                width: 110px;
+            }
+            /* Processing Teller */
+            .sys-table thead th:nth-child(16) {
+                width: 100px;
+            }
+            /* Status Pill Container */
+            .sys-table thead th:nth-child(17) {
+                width: 90px;
+            }
+        /* Action Row Button Block */
+
+        /* 4. Secure the scrollable wrapper boundaries */
+        .sys-table-wrap {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: auto !important; /* Keeps horizontal movement inside this block only */
+            overflow-y: hidden !important;
+            min-height: 320px !important; /* Anchors vertical bounce when table filters to 0 records */
+            background: #ffffff;
+            position: relative;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* =================================================================
+   MODAL ANIMATION FLOW & SECONDARY BUTTON REFINEMENTS
+   ================================================================= */
+
+/* Define the explicit fading closing state targeted by the JavaScript engine */
+.modal-overlay.hide {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 1, 1), visibility 0.2s !important;
+}
+
+/* Make the white modal container slide downwards slightly as it fades out */
+.modal-overlay.hide .sys-modal {
+    transform: translateY(15px) !important;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1) !important;
+}
+
+/* Fix the unstyled cancel button appearance seen in image_31c305.jpg */
+.btn-secondary {
+    height: 38px;
+    padding: 0 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Hover feedback matching your dashboard's active filter states */
+.btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+
+
+/* =================================================================
+   BULLETPROOF NATURAL HEIGHT COLLAPSE DECK
+   ================================================================= */
+
+/* 1. Stop the main layout container from inflating vertically */
+.res-layout-wrap {
+    height: auto !important;
+    min-height: 0 !important;
+    flex: none !important; /* Defeats any parent flex-grow engines pushing it down */
+}
+
+/* 2. Force the card background to match the exact row content bounds */
+.sys-card {
+    height: auto !important;
+    min-height: 0 !important;
+    flex: none !important;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    margin-bottom: 24px; /* Leaves a clean space before the footer line */
+}
+
+/* 3. Fully liberate the scrolling viewport track dimensions */
+.sys-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    min-height: 0 !important; /* ✅ Absolute purge of any residual pixel anchors */
+    height: auto !important;
+}
+
+/* 4. Fix standard cell defaults to allow natural shrinking physics */
+table.sys-table {
+    height: auto !important;
+}
+    </style>
+
+    <div id="printArea"></div>
+
+    @* PAGE HEADER *@
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+        <div>
+            <h2 style="font-size:20px; font-weight:800; color:var(--navy-800,#0f1c3f); margin:0; display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-ticket-alt" style="color:var(--accent);"></i> All Bookings & Reservations
+            </h2>
+            <p style="font-size:13px; color:var(--text-secondary); margin:3px 0 0;">
+                @if (ViewBag.Role == "Admin")
+                {
+                    <text>Administrative view — all reservations</text>
+                }
+                else
+                {
+                    <text>Manage and create passenger reservations</text>
+                }
+            </p>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            @if (ViewBag.Role == "Admin")
+            {
+                <span style="font-size:13px; font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-shield-alt" style="color:var(--accent);"></i> Administrative Mode
+                </span>
+            }
+            else
+            {
+                <span style="font-size:13px; font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-user-tie"></i> Standard Operator Access
+                </span>
+            }
+        </div>
+    </div>
+
+    @* MAIN WRAPPER *@
+    <div class="res-layout-wrap">
+
+        @* LIVE STATS GRID *@
+        <div class="reservations-stats-grid">
+            <div class="dash-style-card card-blue">
+                <div class="stat-icon-wrapper icon-blue">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <div class="stat-text">
+                    <h3 id="stat-total">0</h3>
+                    <p>Total Reservations</p>
+                </div>
+            </div>
+
+            <div class="dash-style-card card-green">
+                <div class="stat-icon-wrapper icon-green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-text">
+                    <h3 id="stat-confirmed">0</h3>
+                    <p>Confirmed</p>
+                </div>
+            </div>
+
+            <div class="dash-style-card card-red">
+                <div class="stat-icon-wrapper icon-red">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-text">
+                    <h3 id="stat-cancelled">0</h3>
+                    <p>Cancelled</p>
+                </div>
+            </div>
+        </div>
+
+  
+        @* FILTER TOOLBAR - DELIBERATE TWO-ROW DESIGN *@
+        <div class="filter-toolbar-card">
+
+            <div class="filter-row-top">
+                <div class="res-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchPassenger" class="form-control"
+                           placeholder="Search passenger..." onkeyup="filterReservations()">
+                </div>
+
+                <select id="filterStatus" class="form-control filter-dropdown" onchange="filterReservations()">
+                    <option value="">All Statuses</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+
+                @if (Context.Session.GetString("Role") == "Admin" || Context.Session.GetString("Role") == "HeadTeller")
+                {
+                    <select id="filterTeller" class="form-control filter-dropdown-operator" onchange="filterReservations()">
+                        <option value="">All Operators</option>
+                        @if (ViewBag.Tellers != null)
+                        {
+                            @foreach (var teller in (List<PUBReservationSystem.Models.Users>)ViewBag.Tellers)
+                            {
+                                <option value="@teller.User_ID">@(teller.Employee?.Full_Name ?? teller.Username)</option>
+                            }
+                        }
+                    </select>
+                }
+
+                <button id="btnReset" class="btn-filter-sys btn-reset" onclick="resetFilters()">
+                    <i class="fas fa-sync-alt"></i> Reset
+                </button>
+            </div>
+
+            <div class="filter-row-bottom">
+                <button id="btnCancelAll" class="btn-filter-sys btn-cancel-all" onclick="openCancelAllModal()">
+                    <i class="fas fa-ban"></i> Cancel All
+                </button>
+
+                <button type="button" class="btn-filter-sys btn-print" id="btnPrintAll" onclick="printSelected()">
+                    <i class="fas fa-print"></i> Print Selected
+                </button>
+
+                @if (ViewBag.Role == "Admin" || ViewBag.Role == "Teller" || ViewBag.Role == "HeadTeller")
+                {
+                    <button type="button" class="btn-primary-sys btn-create" onclick='openModal("createResModal")'>
+                        <i class="fas fa-plus-circle"></i> Create Reservation
+                    </button>
+                }
+            </div>
+
+        </div>
+
+        @* RESERVATIONS TABLE *@
+        <div class="sys-card" style="border-radius:var(--radius-lg,16px); overflow:hidden;">
+            <div class="sys-card-header">
+                <h5 class="sys-card-title"><i class="fas fa-book-open"></i> Reservations Log</h5>
+                <span class="sys-count-badge" id="resCountBadge">
+                    @(ViewBag.Reservations != null ? ((List<PUBReservationSystem.Models.Reservation>)ViewBag.Reservations).Count : 0) bookings
+                </span>
+            </div>
+            <div class="sys-table-wrap">
+                <table class="sys-table" id="reservationsTable">
+                    <thead>
+                        <tr>
+                            <th style="width:40px; text-align:center;"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()"></th>
+                            <th>ID Reference</th>
+                            <th>Trip ID</th>
+                            <th>Bus Name</th>
+                            <th>Body No.</th>
+                            <th>Passenger</th>
+                            <th>Contact</th>
+                            <th>Route</th>
+                            <th>Created At</th>
+                            <th>Travel Date</th>
+                            <th>Departure Time</th>
+                            <th>Seat</th>
+                            <th>Type</th>
+                            <th>Fare</th>
+                            <th>Teller</th>
+                            <th style="text-align:center;">Status</th>
+                            <th class="sticky-action-col" style="text-align:center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservationsTableBody">
+                        @if (ViewBag.Reservations != null)
+                        {
+                            var reservations = (List<PUBReservationSystem.Models.Reservation>)ViewBag.Reservations;
+                            foreach (var res in reservations)
+                            {
+                                var route = res.Trip != null ? $"{res.Trip.Origin} → {res.Trip.Destination}" : "N/A";
+                                var dep = res.Trip?.Scheduled_Departure_Time?.ToString("hh:mm tt") ?? "—";
+                                var tName = res.CreatedBy?.Employee?.Full_Name ?? res.CreatedBy?.Username ?? "System";
+                                var pill = res.Status == "Cancelled" ? "status-cancelled" : res.Status == "Completed" ? "status-completed" : "status-confirmed";
+
+                                var tripId = res.Trip_ID?.ToString() ?? "—";
+                                var busName = res.Trip?.Bus?.Bus_Name ?? "TBA";
+                                var bodyNo = res.Trip?.Bus?.Body_Bus_Number?.ToString() ?? "TBA";
+
+                                <tr data-status="@res.Status" data-teller="@res.User_ID"
+                                    data-res-id="@res.Reservation_ID" data-passenger="@res.Passenger_Name"
+                                    data-route="@route" data-date="@res.Reservation_Date.ToString("MMM dd, yyyy")"
+                                    data-seat="@res.Seat_Number" data-amount="@res.Total_Amount">
+                                    <td style="text-align:center;">
+                                        <input type="checkbox" class="reservation-checkbox"
+                                               data-id="@res.Reservation_ID" data-name="@res.Passenger_Name"
+                                               data-seat="@res.Seat_Number" data-route="@route"
+                                               data-date="@res.Reservation_Date.ToString("MMM dd, yyyy")" data-dep="@dep"
+                                               data-amount="@res.Total_Amount.ToString("N2")" data-type="@res.Passenger_Type"
+                                               data-trip="@tripId" data-bus="@busName" data-body="@bodyNo">
+                                    </td>
+                                    <td class="ref-id-text">@res.Reservation_ID</td>
+                                    <td style="font-weight:600; color:var(--navy-800,#0f1c3f);">@tripId</td>
+                                    <td style="font-weight:600;">@busName</td>
+                                    <td style="color:var(--text-secondary);">@bodyNo</td>
+                                    <td style="font-weight:500;">@res.Passenger_Name</td>
+                                    <td style="color:var(--text-secondary);">@(res.Contact_Number ?? "—")</td>
+                                    <td style="color:var(--text-secondary);">@route</td>
+                                    <td style="color:var(--text-secondary); font-size:11px;">@res.Created_At.ToString("MMM dd, hh:mm tt")</td>
+                                    <td style="color:var(--text-secondary);">@res.Reservation_Date.ToString("MMM dd, yyyy")</td>
+                                    <td style="font-weight:500; font-size:12px;">@dep</td>
+                                    <td style="font-weight:700; color:var(--navy-800,#0f1c3f);">@res.Seat_Number</td>
+                                    <td><span style="font-size:11px; font-weight:600; color:var(--text-secondary);">@res.Passenger_Type</span></td>
+                                    <td style="font-weight:600; color:var(--green,#0fa66e);">₱@res.Total_Amount.ToString("N2")</td>
+                                    <td style="color:var(--text-secondary); font-size:12px;">@tName</td>
+                                    <td style="text-align:center;"><span class="res-status-pill @pill">@res.Status</span></td>
+                                    <td class="sticky-action-col" style="text-align:center;">
+                                        <div class="table-action-row" style="display: flex; justify-content: center; gap: 6px;">
+                                            @if (res.Status != "Cancelled" && (ViewBag.Role == "Admin" || ViewBag.Role == "HeadTeller" || ViewBag.Role == "Teller"))
+                                            {
+                                               @* <button class="btn-action-icon btn-edit-icon" title="Modify Trip & Seat assignment"
+                                                        onclick="openEditReservationModal(this)"
+                                                        data-id="@res.Reservation_ID"
+                                                        data-passenger="@res.Passenger_Name"
+                                                        data-current-trip="#@tripId"
+                                                        data-current-trip-id="@res.Trip_ID"
+                                                        data-current-route="@route"
+                                                        data-current-date="@res.Reservation_Date.ToString("yyyy-MM-dd")"
+                                                        data-current-seat="@res.Seat_Number"
+                                                        data-current-fare="@res.Total_Amount">
+                                                    <i class="fas fa-edit"></i>
+                                                </button> *@
+
+                                                <button class="btn-action-icon btn-cancel-icon" title="Void Booking Record"
+                                                        onclick="cancelReservation('@res.Reservation_ID', this)">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            }
+                                            else if (res.Status == "Cancelled")
+                                            {
+                                                <span class="badge-table-muted" style="color:var(--tb-text-muted); font-size:12px; font-weight:600;">Closed</span>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* MODALS *@
+    @if (ViewBag.Role == "Admin" || ViewBag.Role == "HeadTeller" || ViewBag.Role == "Teller")
+    {
+        @* MODAL 1: SELECT TRIP & SEATS *@
+        <div class="modal-overlay" id="createResModal">
+            <div class="sys-modal" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h4><i class="fas fa-bus"></i> Select Trip & Seats</h4>
+                    <button type="button" class="btn-close-modal" onclick="closeModal('createResModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Destination Route</label>
+                        <select class="form-control" id="routeSelect">
+                            <option value="">Select Origin &rarr; Destination...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Available Trip</label>
+                        <select class="form-control" id="tripSelect" disabled>
+                            <option value="">Select Route First...</option>
+                        </select>
+                    </div>
+
+                    <div id="seatMapSection" style="display:none; margin-top:15px; border-top:1px solid #f0f2f5; padding-top:15px;">
+                        <div id="seatGrid" class="seat-grid-container"></div>
+                    </div>
+
+                    <div class="seat-legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#e3f9f1; border:1px solid #0fa66e;"></div> Available</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#3b6cf7;"></div> Selected</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#fdeaea; opacity:0.6;"></div> Booked</div>
+                    </div>
+                    <div style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:10px;">
+                        <span id="selectedSeatCount">0</span> seat(s) selected
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('createResModal')">Cancel</button>
+                    <button type="button" class="btn-primary-sys" onclick="goToPaymentStep()">Proceed <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        @* MODAL 2: PASSENGER DETAILS & PAYMENT *@
+        <div id="passengerModal" class="modal-overlay">
+            <div class="sys-modal" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h4><i class="fas fa-user-edit"></i> Passenger Details & Payment</h4>
+                    <button class="btn-close-modal" onclick="closeModal('passengerModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="passengerFormsContainer"></div>
+
+                    <div class="fare-breakdown">
+                        <div class="fare-breakdown-title">Fare Breakdown</div>
+                        <div id="fareLines"></div>
+                        <div class="fare-line total">
+                            <span>Total Amount Due <span class="seats-count" id="totalSeatsLabel"></span></span>
+                            <span id="totalFareDisplay">₱0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top:14px; margin-bottom:0;">
+                        <label>Payment Method</label>
+                        <select id="paymentMethod" class="form-control">
+                            <option value="Cash">Cash</option>
+                            <option value="GCash">GCash</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-ghost-sys" onclick="backToSeats()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button class="btn-primary-sys" id="btnConfirmPay" style="background:var(--green,#0fa66e);"
+                            onclick="submitReservations()">
+                        <i class="fas fa-check-circle"></i> Confirm & Pay
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* MODAL 3: SUCCESS & PRINTING *@
+        <div id="successModal" class="modal-overlay">
+            <div class="sys-modal" style="max-width:450px;">
+                <div class="modal-header">
+                    <h4 style="color:var(--green,#0fa66e);"><i class="fas fa-check-circle"></i> Booking Successful!</h4>
+                    <button class="btn-close-modal" onclick="closeModal('successModal')">&times;</button>
+                </div>
+
+                <div class="modal-body" style="text-align:center;">
+                    <p style="color:var(--text-secondary); font-size:13.5px; margin-bottom:15px;">
+                        Reservation(s) confirmed. Review the details below.
+                    </p>
+                    <div id="bookedPassengersList" style="text-align:left; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-bottom:10px;">
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="justify-content:center; gap:10px;">
+                    <button class="btn-ghost-sys" onclick="printNewlyBookedTickets()" style="display:flex; align-items:center; gap:6px;">
+                        <i class="fas fa-print"></i> Print Ticket
+                    </button>
+                    <button class="btn-primary-sys" onclick="closeModal('successModal')">Done</button>
+                </div>
+            </div>
+       
+        </div>
+
+    
+
+
+    }
+    <div id="editReservationModal" class="sys-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:1050; align-items:center; justify-content:center;">
+        <div class="modal-window-card" style="background:#ffffff; border-radius:16px; width:100%; max-width:760px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); overflow:hidden; animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+
+            <div style="padding:18px 24px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:between; align-items:center; background:#f8fafc;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-exchange-alt" style="color:#2563eb; font-size:16px;"></i>
+                    <h4 style="margin:0; font-size:16px; font-weight:700; color:#0f172a;">Modify Trip Assignment Desk</h4>
+                </div>
+                <button onclick="closeModal('editReservationModal')" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:20px; padding:24px;">
+
+                <div style="background:#f1f5f9; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px; border:1px solid #e2e8f0;">
+                    <h5 style="margin:0; font-size:12px; font-weight:700; text-transform:uppercase; color:#475569; letter-spacing:0.5px;">Current Booking Anchor</h5>
+
+                    <input type="hidden" id="modReservationId" />
+                    <input type="hidden" id="modCurrentFare" />
+
+                    <div>
+                        <label style="font-size:11px; color:#64748b; display:block; margin-bottom:2px;">Passenger Name</label>
+                        <strong id="lblPassenger" style="font-size:14px; color:#0f172a;">—</strong>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; color:#64748b; display:block; margin-bottom:2px;">Current Scheduled Route</label>
+                        <span id="lblCurrentRoute" style="font-size:12.5px; font-weight:600; color:#1e293b; display:block;">—</span>
+                        <small id="lblCurrentTripId" style="color:#2563eb; font-weight:700;"></small>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div>
+                            <label style="font-size:11px; color:#64748b; display:block; margin-bottom:2px;">Seat Assigned</label>
+                            <strong id="lblCurrentSeat" style="font-size:13px; color:#0f172a;">—</strong>
+                        </div>
+                        <div>
+                            <label style="font-size:11px; color:#64748b; display:block; margin-bottom:2px;">Total Fare Paid</label>
+                            <strong id="lblCurrentFareDisplay" style="font-size:13px; color:#0fa66e;">₱0.00</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <h5 style="margin:0; font-size:12px; font-weight:700; text-transform:uppercase; color:#2563eb; letter-spacing:0.5px;">New Destination Properties</h5>
+
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Select Upgraded/Alternative Trip Schedule</label>
+                        <select id="modTargetTripSelect" class="form-control" style="width:100%; height:40px; font-size:13px;" onchange="calculateFareDelta()">
+                            <option value="">-- Choose New Available Schedule --</option>
+                            @if (ViewBag.ActiveTripsAvailable != null)
+                            {
+                                @foreach (var trip in (List<PUBReservationSystem.Models.Trip>)ViewBag.ActiveTripsAvailable)
+                                {
+                                    <option value="@trip.Trip_ID" data-price="@trip.Base_Fare">
+                                        #@trip.Trip_ID | @trip.Origin ➔ @trip.Destination (@trip.Scheduled_Departure_Time?.ToString("hh:mm tt")) - ₱@trip.Base_Fare.ToString("N2")
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">New Target Seat Assignment</label>
+                        <input type="text" id="modNewSeatInput" class="form-control" placeholder="Ex: 12A, 14" style="height:40px; font-size:13px; text-transform:uppercase;" />
+                    </div>
+
+                    <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:14px; margin-top:5px;">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569; margin-bottom:6px;">
+                            <span>New Target Line Cost:</span>
+                            <span id="summaryNewFare">₱0.00</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #e2e8f0;">
+                            <span>Credit from Prior Ticket:</span>
+                            <span id="summaryCreditPaid">-₱0.00</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13.5px; font-weight:700; color:#0f172a;">
+                            <span style="color:#c2410c;"><i class="fas fa-wallet"></i> Additional Due:</span>
+                            <span id="summaryDueAmount" style="color:#dc2626; font-size:15px;">₱0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="padding:14px 24px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn-filter-sys" onclick="closeModal('editReservationModal')" style="height:38px;">Close Window</button>
+                <button type="button" class="btn-primary-sys" onclick="submitTripModification()" style="height:38px; padding:0 20px; background:#2563eb; border-color:#2563eb;">
+                    <i class="fas fa-receipt"></i> Authorize & Bill Exchange
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
+<!-- SINGLE RESERVATION CANCELLATION MODAL -->
+<div class="modal-overlay" id="singleCancelModal" style="z-index: 99999;">
+    <div class="sys-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i> Confirm Void Request</h4>
+            <button type="button" class="btn-close-modal" onclick="closeModal('singleCancelModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>You are about to cancel and void reservation reference <strong id="singleCancelTargetDisplay" style="color:#dc2626; background:#fef2f2; padding:2px 6px; border-radius:4px; font-family:monospace;">—</strong>.</p>
+            <p style="margin-top: 8px; color: #64748b; font-size: 13px;">This transaction will release the assigned seat immediately. This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeModal('singleCancelModal')">Discard</button>
+            <button type="button" class="btn-primary-sys" id="btnConfirmSingleCancel" style="background:#ef4444; border-color:#ef4444;" onclick="executeSingleCancel()">Yes, Void Record</button>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- CANCEL ALL MODAL -->
+    <div class="modal-overlay" id="cancelAllModal" style="z-index: 99999;">
+        <div class="sys-modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i> Confirm Bulk Cancellation</h4>
+                <button type="button" class="btn-close-modal" onclick="closeModal('cancelAllModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to cancel <strong><span id="cancelCountDisplay">0</span></strong> reservation(s). Do you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost-sys" onclick="closeModal('cancelAllModal')">Cancel</button>
+                <button type="button" class="btn-primary-sys" style="background:#ef4444;" onclick="executeCancelAll()">Yes, Confirm Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            // ===================== GLOBALS =====================
+            var selectedSeats    = [];
+            var currentBaseFare  = 0;
+            var currentTripId    = '';
+            var currentTripLabel = '';
+            var currentBusName   = "TBA";
+            var currentBodyNo    = "TBA";
+            var successPayloads  = [];
+            var successResults   = [];
+            var isMovingToNextStep = false;
+
+            document.addEventListener('DOMContentLoaded', function() {
+
+
+                updateStatCards();
+                fetchRoutes();
+
+                var routeSel = document.getElementById('routeSelect');
+                if (routeSel) routeSel.addEventListener('change', loadTrips);
+
+                var tripSel = document.getElementById('tripSelect');
+                if (tripSel) {
+                    tripSel.addEventListener('change', function() {
+                        var opt = this.options[this.selectedIndex];
+                        if (opt && this.value) {
+                            currentBusName = opt.getAttribute('data-bus') || "TBA";
+                            currentBodyNo = opt.getAttribute('data-body') || "TBA";
+                            loadSeatMap();
+                        } else {
+                            var seatMap = document.getElementById('seatMapSection');
+                            if (seatMap) seatMap.style.display = 'none';
+                        }
+                    });
+                }
+            });
+
+            document.addEventListener('input', function (e) {
+                if (e.target.classList.contains('pax-name')) {
+                    var cleanString = e.target.value.replace(/[^a-zA-Z\s-]/g, '');
+                    e.target.value = cleanString.replace(/\b\w/g, function(char) { return char.toUpperCase(); });
+                }
+                if (e.target.classList.contains('pax-contact')) {
+                    var numbersOnly = e.target.value.replace(/\D/g, '');
+                    if (numbersOnly.length > 11) numbersOnly = numbersOnly.substring(0, 11);
+                    e.target.value = numbersOnly;
+                }
+            });
+
+            // ===================== DYNAMIC STAT CARDS =====================
+            function updateStatCards() {
+                var rows = document.querySelectorAll('#reservationsTableBody tr');
+                var countTotal = 0, countConfirmed = 0, countCancelled = 0;
+
+                rows.forEach(function(row) {
+                    if (row.classList.contains('empty-state') || row.cells.length < 5) return;
+                    countTotal++;
+                    var status = row.getAttribute('data-status');
+                    if (status === 'Cancelled') countCancelled++;
+                    else countConfirmed++;
+                });
+
+                animateNumber('stat-total', countTotal);
+                animateNumber('stat-confirmed', countConfirmed);
+                animateNumber('stat-cancelled', countCancelled);
+            }
+
+            function animateNumber(elementId, endValue) {
+                var el = document.getElementById(elementId);
+                if (!el) return;
+                var startValue = parseInt(el.textContent.replace(/,/g, '')) || 0;
+                if (startValue === endValue) return;
+
+                var duration = 800, startTimestamp = null;
+                var step = function(timestamp) {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    var progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    var easeProgress = 1 - Math.pow(1 - progress, 3);
+                    var current = Math.floor(easeProgress * (endValue - startValue) + startValue);
+                    el.textContent = current.toLocaleString();
+                    if (progress < 1) window.requestAnimationFrame(step);
+                    else el.textContent = endValue.toLocaleString();
+                };
+                window.requestAnimationFrame(step);
+            }
+
+            // ===================== MODAL HELPERS =====================
+            function openModal(modalId) {
+                var modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = ''; // Clear inline block
+                    modal.classList.remove('hide');
+                    modal.classList.add('show');
+                }
+            }
+
+                function closeModal(modalId) {
+            var modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+                modal.classList.add('hide'); // Injects the custom smooth fade out rules
+
+                // Wait exactly 200ms for the slide-down/fade animation to finish before removing from layout flow
+                setTimeout(function() {
+                    modal.style.display = "none";
+                    modal.classList.remove('hide');
+
+                    if (modalId === 'createResModal' && !isMovingToNextStep) resetWizard();
+                    if (modalId === 'passengerModal') isMovingToNextStep = false;
+                    if (modalId === 'successModal') resetWizard();
+                }, 200);
+            }
+        }
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    var open = document.querySelectorAll('.modal-overlay.show');
+                    if (open.length) closeModal(open[open.length - 1].id);
+                }
+            });
+
+            // ===================== STEP 1 — ROUTE & SEAT =====================
+            function resetWizard() {
+                selectedSeats = []; currentBaseFare = 0; currentTripId = ''; currentTripLabel = '';
+                var routeSel = document.getElementById('routeSelect');
+                if (routeSel) routeSel.selectedIndex = 0;
+
+                var tripSel = document.getElementById('tripSelect');
+                if (tripSel) {
+                    tripSel.innerHTML = '<option value="">Select Route First...</option>';
+                    tripSel.disabled = true;
+                }
+
+                var mapSec = document.getElementById('seatMapSection');
+                if (mapSec) mapSec.style.display = 'none';
+
+                var btn = document.getElementById('btnProceed');
+                if (btn) btn.disabled = true;
+
+                updateSeatCount();
+            }
+
+            function fetchRoutes() {
+                fetch('/Home/GetAllRoutes')
+                .then(r => r.json())
+                .then(routes => {
+                    var sel = document.getElementById('routeSelect');
+                    if(!sel) return;
+                    sel.innerHTML = '<option value="">Select Origin → Destination...</option>';
+                    routes.forEach(r => {
+                        sel.innerHTML += `<option value="${r.origin}|${r.destination}">${r.route}</option>`;
+                    });
+                })
+                .catch(err => console.error("Route fetch failed:", err));
+            }
+
+            function loadTrips() {
+                var val = document.getElementById('routeSelect').value;
+                var ts = document.getElementById('tripSelect');
+                var mapSec = document.getElementById('seatMapSection');
+
+                if (mapSec) mapSec.style.display = 'none';
+
+                if (!val) {
+                    ts.innerHTML = '<option value="">Select Route First...</option>';
+                    ts.disabled = true;
+                    return;
+                }
+
+                var parts = val.split('|');
+                ts.innerHTML = '<option value="">Loading...</option>';
+
+                fetch('/Home/GetTripsByRoute?origin=' + encodeURIComponent(parts[0]) + '&destination=' + encodeURIComponent(parts[1]))
+                .then(r => r.json())
+                .then(trips => {
+                    ts.innerHTML = '<option value="">Select a Trip...</option>';
+                    if (!trips || trips.length === 0) {
+                        ts.innerHTML = '<option value="">No trips available.</option>';
+                        return;
+                    }
+                    trips.forEach(t => {
+                        var opt = document.createElement('option');
+                        opt.value = t.tripId;
+                        opt.setAttribute('data-fare', t.baseFare);
+                        opt.setAttribute('data-bus', t.busName);
+                        opt.setAttribute('data-label', t.busName + ' — ' + t.departure);
+                        opt.setAttribute('data-body', t.bodyNo || 'TBA');
+                        opt.textContent = t.busName + ' — ' + t.departure;
+                        ts.appendChild(opt);
+                    });
+                    ts.disabled = false;
+                })
+                .catch(err => {
+                    ts.innerHTML = '<option value="">Error loading trips.</option>';
+                });
+            }
+
+            function loadSeatMap() {
+                var ts = document.getElementById('tripSelect');
+                var mapSec = document.getElementById('seatMapSection');
+                currentTripId = ts.value;
+
+                if (!currentTripId) {
+                    if(mapSec) mapSec.style.display = 'none';
+                    return;
+                }
+
+                var opt = ts.options[ts.selectedIndex];
+                currentBaseFare  = parseFloat(opt.getAttribute('data-fare')) || 0;
+                currentTripLabel = opt.getAttribute('data-label') || '';
+
+                fetch('/Home/GetAvailableSeats?tripId=' + encodeURIComponent(currentTripId))
+                    .then(r => r.json())
+                    .then(seats => {
+                        if(mapSec) mapSec.style.display = 'block';
+                        buildGrid(seats);
+                    })
+                    .catch(err => console.error("Error loading seats:", err));
+            }
+
+            function buildGrid(seatsData) {
+                var grid = document.getElementById('seatGrid');
+                if(!grid) return;
+                grid.innerHTML = '';
+                selectedSeats = [];
+                updateSeatCount();
+                var seatNum = 1;
+
+                for (var row = 0; row < 10; row++) {
+                    for (var col = 0; col < 5; col++) {
+                        if (col === 2) {
+                            grid.innerHTML += '<div class="seat aisle"></div>';
+                            continue;
+                        }
+                        var info    = seatsData.find(s => s.seatNumber === seatNum);
+                        var booked  = info ? info.isBooked : false;
+                        var cls     = booked ? 'booked' : 'available';
+                        var onclick = booked ? '' : `onclick="toggleSeat(${seatNum})"`;
+
+                        grid.innerHTML += `<div class="seat ${cls}" id="seat-${seatNum}" ${onclick}>${seatNum}</div>`;
+                        seatNum++;
+                    }
+                }
+            }
+
+        // 1. Prepare and Open Modal
+            function openCancelAllModal() {
+                const visibleRows = document.querySelectorAll("#reservationsTableBody tr:not([style*='display: none'])");
+                const ids = [];
+
+                visibleRows.forEach(row => {
+                    const id = row.getAttribute("data-res-id");
+                    // Only grab rows that aren't ALREADY cancelled
+                    const status = row.getAttribute("data-status");
+                    if (id && status !== "Cancelled") ids.push(id);
+                });
+
+                // ✅ FIXED: Replaced the default browser alert pop-up with a premium system toast
+                if (ids.length === 0) {
+                    showToast("No active visible reservations to cancel.", "warning");
+                    return;
+                }
+
+                const span = document.getElementById("cancelCountDisplay");
+                if (span) span.innerText = ids.length;
+
+                openModal('cancelAllModal');
+            }
+
+                    function executeCancelAll() {
+                        const visibleRows = document.querySelectorAll("#reservationsTableBody tr:not([style*='display: none'])");
+                        const ids = [];
+                        const rowsToUpdate = []; // Keep track of the rows we are altering
+
+                        visibleRows.forEach(row => {
+                            const id = row.getAttribute("data-res-id");
+                            const status = row.getAttribute("data-status");
+                            if (id && status !== "Cancelled") {
+                                ids.push(id);
+                                rowsToUpdate.push(row);
+                            }
+                        });
+
+                        const btn = document.querySelector("#cancelAllModal .btn-primary-sys");
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+
+                        fetch('/Home/CancelAllReservations', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(ids)
+                        })
+                                .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            closeModal('cancelAllModal');
+
+                            // --- THE MULTI-LINE FORMATTED TOAST ---
+                            let customMessage = `
+                                <span style="display: flex; flex-direction: column; gap: 4px; line-height: 1.3; margin-left: 4px;">
+                                    <strong style="color: #10b981; font-size: 14px;">${data.jobPosition}: ${data.adminName}</strong>
+                                    <span style="color: #94a3b8; font-size: 11.5px; font-family: monospace;">User ID: ${data.adminId}</span>
+                                    <span style="color: #ffffff; font-size: 12.5px; margin-top: 2px;">Cancelled all the Reservations.</span>
+                                </span>
+                            `;
+
+                            if (typeof showToast === "function") {
+                                showToast(customMessage);
+                            }
+                            // --------------------------------------
+
+                            rowsToUpdate.forEach(row => {
+                                row.setAttribute('data-status', 'Cancelled');
+
+                                let pill = row.querySelector('.res-status-pill');
+                                if (pill) {
+                                    pill.className = 'res-status-pill status-cancelled';
+                                    pill.textContent = 'Cancelled';
+                                }
+
+                                let actionCol = row.querySelector('.sticky-action-col');
+                                if (actionCol) actionCol.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">Closed</span>';
+
+                                row.style.transition = 'background 0.4s';
+                                row.style.background = '#fff1f2';
+                                setTimeout(() => { row.style.background = ''; }, 1500);
+                            });
+
+                            updateStatCards();
+                            filterReservations();
+
+                            btn.disabled = false;
+                            btn.innerHTML = 'Yes, Confirm Cancel';
+                        } else {
+                            alert("Error: " + data.message);
+                            btn.disabled = false;
+                            btn.innerHTML = 'Yes, Confirm Cancel';
+                        }
+                    })
+                        .catch(err => {
+                            console.error(err);
+                            alert("A system error occurred.");
+                            btn.disabled = false;
+                            btn.innerHTML = 'Yes, Confirm Cancel';
+                        });
+                    }
+
+            function toggleSeat(n) {
+                var el = document.getElementById('seat-' + n);
+                var idx = selectedSeats.indexOf(n);
+                if (idx >= 0) {
+                    selectedSeats.splice(idx, 1);
+                    el.classList.remove('selected');
+                    el.classList.add('available');
+                } else {
+                    selectedSeats.push(n);
+                    el.classList.remove('available');
+                    el.classList.add('selected');
+                }
+                updateSeatCount();
+                var btnProceed = document.getElementById('btnProceed');
+                if(btnProceed) btnProceed.disabled = selectedSeats.length === 0;
+            }
+
+            function updateSeatCount() {
+                var el = document.getElementById('selectedSeatCount');
+                if (el) el.textContent = selectedSeats.length;
+            }
+
+            function goToPaymentStep() {
+                var tripSelect = document.getElementById('tripSelect');
+                if (!tripSelect || !tripSelect.value) {
+                    if (typeof showToast === "function") showToast('Please select a trip first.', 'warning');
+                    else alert('Please select a trip first.');
+                    return;
+                }
+                if (selectedSeats.length === 0) {
+                    if (typeof showToast === "function") showToast('Please select at least one seat.', 'warning');
+                    else alert('Please select at least one seat.');
+                    return;
+                }
+                proceedToPassengers();
+            }
+
+            // ===================== STEP 2 — PASSENGER DETAILS =====================
+            function proceedToPassengers() {
+                isMovingToNextStep = true;
+                closeModal('createResModal');
+                var container = document.getElementById('passengerFormsContainer');
+                if(!container) return;
+                container.innerHTML = '';
+                selectedSeats.sort(function (a, b) { return a - b; });
+
+                selectedSeats.forEach(function (seat) {
+                    container.innerHTML +=
+                        '<div class="passenger-card" id="card-seat-' + seat + '">' +
+                            '<div class="passenger-card-header"><i class="fas fa-couch" style="color:#3b6cf7;"></i> Seat #' + seat + '</div>' +
+                            '<div class="passenger-grid">' +
+                                '<div class="form-group"><label>Full Name</label>' +
+                                    '<input type="text" class="form-control pax-name" placeholder="Juan Dela Cruz"></div>' +
+                                '<div class="form-group"><label>Contact</label>' +
+                                    '<input type="text" class="form-control pax-contact" placeholder="09XXXXXXXXX"></div>' +
+                                '<div class="form-group"><label>Type</label>' +
+                                    '<select class="form-control pax-type" onchange="recalcTotal()">' +
+                                        '<option value="Regular">Regular</option>' +
+                                        '<option value="Student">Student (-20%)</option>' +
+                                        '<option value="PWD">PWD (-20%)</option>' +
+                                        '<option value="Senior">Senior (-20%)</option>' +
+                                    '</select></div>' +
+                            '</div>' +
+                        '</div>';
+                });
+
+                recalcTotal();
+                openModal('passengerModal');
+            }
+
+            function backToSeats() {
+                closeModal('passengerModal');
+                openModal('createResModal');
+            }
+
+            function recalcTotal() {
+                var fareLines = document.getElementById('fareLines');
+                if(!fareLines) return;
+                fareLines.innerHTML = '';
+                var total = 0;
+                var types = document.querySelectorAll('.pax-type');
+
+                fareLines.innerHTML += '<div class="fare-line"><span>Base Fare per Seat</span><span>₱' + currentBaseFare.toLocaleString('en-US', {minimumFractionDigits:2}) + '</span></div>';
+
+                types.forEach(function (sel, i) {
+                    var seat = selectedSeats[i];
+                    var isDisc = sel.value !== 'Regular';
+                    var fare   = isDisc ? currentBaseFare * 0.8 : currentBaseFare;
+                    var disc   = isDisc ? ' <span style="color:var(--orange,#f07d1c); font-size:11px;">−20%</span>' : '';
+                    fareLines.innerHTML += '<div class="fare-line"><span>Seat #' + seat + ' · ' + sel.value + disc + '</span><span>₱' + fare.toLocaleString('en-US', {minimumFractionDigits:2}) + '</span></div>';
+                    total += fare;
+                });
+
+                var totalDisplay = document.getElementById('totalFareDisplay');
+                var seatLabel = document.getElementById('totalSeatsLabel');
+
+                if(totalDisplay) totalDisplay.textContent = '₱' + total.toLocaleString('en-US', {minimumFractionDigits:2});
+                if(seatLabel) seatLabel.textContent  = '(' + selectedSeats.length + ' seat' + (selectedSeats.length !== 1 ? 's' : '') + ')';
+            }
+
+            // ===================== STEP 3 — SUBMIT =====================
+                    async function submitReservations() {
+                const btn = document.getElementById('btnConfirmPay');
+                const cards = document.querySelectorAll('.passenger-card');
+                const payloads = [];
+                let errorMsg = '';
+
+                // 1. Client-Side Validation
+                for (let i = 0; i < cards.length; i++) {
+                    const card = cards[i];
+                    const name = card.querySelector('.pax-name').value.trim();
+                    const contact = card.querySelector('.pax-contact').value.trim();
+                    const type = card.querySelector('.pax-type').value;
+
+                    if (!name) { errorMsg = 'Please provide a full name for all passengers.'; break; }
+                    if (contact && contact.length !== 11) { errorMsg = 'Contact numbers must be 11 digits.'; break; }
+
+                    payloads.push({
+                        passengerName: name,
+                        contactNumber: contact,
+                        passengerType: type,
+                        tripId: currentTripId,
+                        seatNumber: String(selectedSeats[i]),
+                        paymentMethod: document.getElementById('paymentMethod').value
+                    });
+                }
+
+                if (errorMsg) {
+                    if (typeof showToast === "function") showToast(errorMsg, 'warning');
+                    else alert(errorMsg);
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+                const results = [];
+
+                // 2. Sequential Processing
+                for (const p of payloads) {
+                    const formData = new URLSearchParams();
+                    Object.keys(p).forEach(key => formData.append(key, p[key]));
+
+                    try {
+                        const response = await fetch('/Home/SaveReservation', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: formData.toString()
+                        });
+
+                        if (!response.ok) throw new Error('Network error');
+                        const res = await response.json();
+                        results.push(res);
+                    } catch (err) {
+                        console.error("Save Error:", err);
+                        results.push({ success: false, message: err.message });
+                    }
+                }
+
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm & Pay';
+
+                // 3. UI Updates
+                closeModal('passengerModal');
+
+                // Only proceed to success modal if at least one reservation was successful
+                const successCount = results.filter(r => r.success).length;
+                if (successCount > 0) {
+                    window.successResults = results;
+                    showSuccessModal(payloads, results);
+                    insertRowsIntoTable(payloads, results); // This function now handles the "Created At" column
+                }
+
+                if (typeof updateStatCards === 'function') updateStatCards();
+            }
+
+                    function insertRowsIntoTable(payloads, results) {
+                var tbody = document.getElementById('reservationsTableBody');
+                if (!tbody) return;
+
+                var currentTellerId = '@Context.Session.GetString("User_ID")';
+                var currentTellerName = '@Context.Session.GetString("Username")';
+
+                payloads.forEach(function (p, i) {
+                    var res = results[i] || {};
+                    if (!res.success || !res.data) return;
+                    var d = res.data;
+                    var resId = d.reservation_ID || '—';
+                    var fare = d.total_Amount;
+
+                    var travelDate = d.reservation_Date || '—';
+                    var createdAt = d.created_At || '—';
+
+                    var busName = (d.trip && d.trip.bus) ? d.trip.bus.bus_Name : "Unknown";
+                    var bodyNo = (d.trip && d.trip.bus) ? d.trip.bus.body_No : "Unknown";
+
+                    // FIX 1: Build the Exact Route string from the Server Data!
+                    var exactRoute = (d.trip && d.trip.origin && d.trip.destination)
+                        ? d.trip.origin + ' &rarr; ' + d.trip.destination
+                        : 'N/A';
+
+                    // FIX 2: Format the Departure Time properly instead of hardcoding a dash!
+                    var depTime = '—';
+                    if (d.trip && d.trip.departure_Time) {
+                        depTime = new Date(d.trip.departure_Time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+                    }
+
+                    var tr = document.createElement('tr');
+                    tr.setAttribute('data-status', 'Confirmed');
+                    tr.setAttribute('data-res-id', resId);
+                    tr.setAttribute('data-passenger', d.passenger_Name);
+                    tr.setAttribute('data-seat', d.seat_Number);
+                    tr.setAttribute('data-amount', fare.toFixed(2));
+                    tr.setAttribute('data-teller', currentTellerId);
+                    tr.className = 'new-row-flash';
+
+                    tr.innerHTML =
+                        '<td style="text-align:center;"><input type="checkbox" class="reservation-checkbox" ' +
+                        'data-id="' + resId + '" data-name="' + escHtml(d.passenger_Name) + '" ' +
+                        'data-teller="' + currentTellerId + '" ' +
+                        'data-seat="' + d.seat_Number + '" data-route="' + exactRoute + '" ' +
+                        'data-date="' + travelDate + '" data-dep="' + depTime + '" ' +
+                        'data-amount="' + fare.toFixed(2) + '" data-type="' + p.passengerType + '" ' +
+                        'data-trip="' + currentTripId + '" data-bus="' + escHtml(busName) + '" data-body="' + escHtml(bodyNo) + '"></td>' +
+                        '<td class="ref-id-text">' + resId + '</td>' +
+                        '<td style="font-weight:600; color:var(--navy-800,#0f1c3f);">' + currentTripId + '</td>' +
+                        '<td style="font-weight:600;">' + escHtml(busName) + '</td>' +
+                        '<td style="color:var(--text-secondary);">' + escHtml(bodyNo) + '</td>' +
+                        '<td style="font-weight:500;">' + escHtml(d.passenger_Name) + '</td>' +
+                        '<td style="color:var(--text-secondary);">' + (p.contactNumber || '—') + '</td>' +
+                        '<td style="color:var(--text-secondary);">' + exactRoute + '</td>' +  // Now correctly shows Manila -> Cebu
+                        '<td style="color:var(--text-secondary); font-size:11px;">' + createdAt + '</td>' +
+                        '<td style="color:var(--text-secondary);">' + travelDate + '</td>' +
+                        '<td style="font-weight:500; font-size:12px;">' + depTime + '</td>' + // Now correctly shows 08:00 pm
+                        '<td style="font-weight:700; color:var(--navy-800,#0f1c3f);">' + d.seat_Number + '</td>' +
+                        '<td><span style="font-size:11px; font-weight:600; color:var(--text-secondary);">' + p.passengerType + '</span></td>' +
+                        '<td style="font-weight:600; color:var(--green,#0fa66e);">₱' + fare.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</td>' +
+                        '<td style="color:var(--text-secondary); font-size:12px;">' + currentTellerName + '</td>' +
+                        '<td style="text-align:center;"><span class="res-status-pill status-confirmed">Confirmed</span></td>' +
+                        '<td class="sticky-action-col" style="text-align:center;">' +
+                        '<button class="btn-danger-sys" style="padding:5px 12px; font-size:11.5px;" onclick="cancelReservation(\'' + resId + '\', this)">' +
+                        '<i class="fas fa-ban"></i> Cancel</button></td>';
+
+                    tbody.insertBefore(tr, tbody.firstChild);
+                });
+
+                var badge = document.getElementById('resCountBadge');
+                if (badge) {
+                    var count = tbody.querySelectorAll('tr').length;
+                    badge.textContent = count + ' booking' + (count !== 1 ? 's' : '');
+                }
+            }
+
+            function escHtml(str) {
+                return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            }
+
+            // ===================== CANCEL =====================
+                    // Global memory anchors to securely cache context between modal interaction layers
+        var activeCancelResId = null;
+        var activeCancelBtnRef = null;
+
+        // Called immediately when a teller clicks the row action cancel icon
+        function cancelReservation(resId, btn) {
+            // Stash the specific values in memory coordinates
+            window.activeCancelResId = resId;
+            window.activeCancelBtnRef = btn;
+
+            // Inject reference ID into the prompt dynamically
+            const targetSpan = document.getElementById("singleCancelTargetDisplay");
+            if (targetSpan) {
+                targetSpan.innerText = resId;
+            }
+
+            // Call your system's smooth fade-in modal pipeline
+            openModal('singleCancelModal');
+        }
+
+        // Authorized final step triggered by clicking the modal's primary button action
+        async function executeSingleCancel() {
+            const resId = window.activeCancelResId;
+            const btn = window.activeCancelBtnRef;
+
+            if (!resId || !btn) return;
+
+            const modalBtn = document.getElementById('btnConfirmSingleCancel');
+            modalBtn.disabled = true;
+            modalBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Voiding...';
+
+            try {
+                const response = await fetch('/Home/CancelReservation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reservationId: resId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    if (typeof showToast === "function") showToast(data.message, 'success');
+
+                    var row = btn.closest('tr');
+                    if (row) {
+                        var pill = row.querySelector('.res-status-pill');
+                        if (pill) {
+                            pill.className = 'res-status-pill status-cancelled';
+                            pill.textContent = 'Cancelled';
+                        }
+                        var td = btn.closest('td');
+                        if (td) td.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">Closed</span>';
+
+                        row.setAttribute('data-status', 'Cancelled');
+                        row.style.transition = 'background 0.4s';
+                        row.style.background = '#fff1f2';
+                        setTimeout(function () { row.style.background = ''; }, 1500);
+
+                        // Instantly free up space maps if the teller has that specific trip workspace open
+                        var rowTripId = row.getAttribute('data-trip');
+                        if (typeof currentTripId !== 'undefined' && currentTripId === rowTripId) {
+                            loadSeatMap();
+                        }
+                    }
+
+                    updateStatCards();
+                    closeModal('singleCancelModal');
+                } else {
+                    if (typeof showToast === "function") showToast(data.message, 'error');
+                }
+            } catch (err) {
+                console.error("Cancellation network pipeline failure:", err);
+                if (typeof showToast === "function") showToast("A transaction error stopped the cancel query request.", 'error');
+            } finally {
+                // Clean up configuration states after modal animation cycle ends
+                modalBtn.disabled = false;
+                modalBtn.innerHTML = 'Yes, Void Record';
+            }
+        }
+
+            // ===================== FILTER =====================
+                    function filterReservations() {
+            // 1. Get current values from all filters
+            const searchTerm = document.getElementById("searchPassenger").value.toLowerCase();
+            const statusFilter = document.getElementById("filterStatus").value;
+            const tellerFilter = document.getElementById("filterTeller") ? document.getElementById("filterTeller").value : "";
+
+            const tbody = document.getElementById("reservationsTableBody");
+            const rows = tbody.querySelectorAll("tr:not(.sys-table-empty-row)"); // Avoid evaluating an old empty indicator row
+
+            let visibleCount = 0;
+            let delayIndex = 0;
+
+            // 2. Remove any existing empty-state indicator rows first to refresh the calculation layer
+            const oldEmptyRow = tbody.querySelector(".sys-table-empty-row");
+            if (oldEmptyRow) {
+                oldEmptyRow.remove();
+            }
+
+            // 3. Main structural scanning pipeline loop
+            rows.forEach(row => {
+                const passengerName = row.getAttribute("data-passenger")?.toLowerCase() || "";
+                const rowStatus = row.getAttribute("data-status");
+                const rowTeller = row.getAttribute("data-teller");
+
+                const matchesSearch = passengerName.includes(searchTerm);
+                const matchesStatus = (statusFilter === "" || rowStatus === statusFilter);
+                const matchesTeller = (tellerFilter === "" || rowTeller === tellerFilter);
+
+                if (matchesSearch && matchesStatus && matchesTeller) {
+                    if (row.style.display === "none") {
+                        row.style.display = ""; // Put it back into the layout flow
+                        row.style.animation = 'none';
+                        row.offsetHeight; // Force reflow step
+                        row.style.animation = `rowSlideIn 0.35s cubic-bezier(0.22,1,0.36,1) ${delayIndex * 40}ms both`;
+                    }
+                    visibleCount++;
+                    delayIndex++;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            // 4. DYNAMIC FEEDBACK SYSTEM: Inject a professional notice row if no bookings match the parameters
+            if (visibleCount === 0) {
+                const emptyTr = document.createElement("tr");
+                emptyTr.className = "sys-table-empty-row";
+
+                // Colspan="17" ensures the cell stretches gracefully across all structural logging data indices
+                emptyTr.innerHTML = `
+                    <td colspan="17">
+                        <i class="fas fa-folder-open"></i>
+                        No matching reservation logs found for "${escHtml(document.getElementById("searchPassenger").value)}"
+                    </td>
+                `;
+                tbody.appendChild(emptyTr);
+            }
+
+            // 5. Update the count metrics badge directly
+            document.getElementById("resCountBadge").innerText = visibleCount + (visibleCount === 1 ? " booking" : " bookings");
+        }
+
+
+           
+            // TOAST LOGIC
+                    function showToast(message = "Filters reset successfully!", type = "success") {
+                let toast = document.getElementById("filterToast");
+
+                if (!toast) {
+                    toast = document.createElement("div");
+                    toast.id = "filterToast";
+                    toast.className = "sys-toast";
+                    document.body.appendChild(toast);
+                }
+
+                // Default configuration (Success - Green theme)
+                let iconClass = "fa-check-circle";
+                let accentColor = "#10b981";
+
+                // Dynamic coloring states
+                if (type === "error" || type === "danger") {
+                    iconClass = "fa-times-circle";
+                    accentColor = "#ef4444"; // 🔴 Solid red color theme
+                } else if (type === "warning") {
+                    iconClass = "fa-exclamation-triangle";
+                    accentColor = "#f59e0b"; // 🟡 Amber/Orange color theme
+                }
+
+                // Apply a clean accent edge stripe to the left side/corner corner of the toast container
+                toast.style.borderLeft = `4px solid ${accentColor}`;
+                toast.innerHTML = `<i class="fas ${iconClass}" style="color: ${accentColor}; font-size: 14px;"></i> <span>${message}</span>`;
+
+                toast.classList.add("show");
+
+                if (window.toastTimer) {
+                    clearTimeout(window.toastTimer);
+                }
+
+                window.toastTimer = setTimeout(() => {
+                    toast.classList.remove("show");
+                }, 3000);
+            }
+
+            // UPDATE YOUR EXISTING RESET FUNCTION
+                    function resetFilters() {
+                // 1. Target the sync icon inside the reset button for the micro-interaction
+                const resetIcon = document.querySelector("#btnReset i");
+
+                if (resetIcon) {
+                    // Inject the custom rotation class
+                    resetIcon.classList.add("animate-spin-once");
+
+                    // Clean up the class immediately after the 600ms animation ends so it can spin again next time
+                    resetIcon.addEventListener("animationend", function() {
+                        resetIcon.classList.remove("animate-spin-once");
+                    }, { once: true }); // '{ once: true }' ensures the listener detaches automatically
+                }
+
+                // 2. Clear the input values safely (Your original structure preserved)
+                const searchInput = document.getElementById("searchPassenger");
+                const statusSelect = document.getElementById("filterStatus");
+                const tellerSelect = document.getElementById("filterTeller");
+
+                if (searchInput) searchInput.value = "";
+                if (statusSelect) statusSelect.value = "";
+
+                // Reset Operator dropdown if it exists in the current user's session view
+                if (tellerSelect) {
+                    tellerSelect.value = "";
+                }
+
+                // 3. Re-run filtering logic to reveal all matching records with smooth waterfall transitions
+                filterReservations();
+
+                // 4. SHOW THE TOAST (Pass "success" explicitly to forcefully paint over old red warning themes)
+                if (typeof showToast === "function") {
+                    showToast("Filters reset successfully!", "success");
+                }
+            }
+
+        function toggleSelectAll() {
+            var all = document.getElementById('selectAllCheckbox').checked;
+                document.querySelectorAll('.reservation-checkbox').forEach(function (cb) {
+                    if (cb.closest('tr').style.display !== 'none') cb.checked = all;
+                });
+            }
+
+            // ===================== PROFESSIONAL PRINT TICKET GENERATOR =====================
+            function generateTicketHTML(name, seat, resId, type, amount, route, date, dep, tripId, busName, bodyNo) {
+                return `
+                <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; width:100%; max-width:600px; margin:0 auto 20px; background:#fff; border:1px solid #ccc; border-radius:8px; display:flex; overflow:hidden; page-break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+                    <div style="flex:1; padding:20px; border-right:2px dashed #ccc; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f1c3f; padding-bottom:10px; margin-bottom:15px;">
+                            <h2 style="margin:0; color:#0f1c3f; font-size:22px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">PUB <span style="color:#3b6cf7;">EXPRESS</span></h2>
+                            <span style="font-size:12px; font-weight:700; color:#666; background:#f1f5f9; padding:4px 8px; border-radius:4px;">BOARDING PASS</span>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                            <div>
+                                <p style="margin:0; font-size:10px; color:#666; text-transform:uppercase; font-weight:700;">Passenger Name</p>
+                                <p style="margin:0; font-size:16px; font-weight:700; color:#0f1c3f;">${name}</p>
+                            </div>
+                            <div style="text-align:right;">
+                                <p style="margin:0; font-size:10px; color:#666; text-transform:uppercase; font-weight:700;">Reservation ID</p>
+                                <p style="margin:0; font-size:14px; font-weight:700; color:#0f1c3f;">${resId}</p>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; background:#f8fafd; padding:12px; border-radius:6px; margin-bottom:12px;">
+                            <div>
+                                <p style="margin:0; font-size:10px; color:#666; text-transform:uppercase; font-weight:700;">Route & Schedule</p>
+                                <p style="margin:0; font-size:13px; font-weight:700; color:#0f1c3f;">${route}</p>
+                                <p style="margin:2px 0 0; font-size:12px; color:#666; font-weight:600;">${date} ${dep && dep !== '—' ? dep : ''}</p>
+                            </div>
+                            <div style="text-align:right;">
+                                <p style="margin:0; font-size:10px; color:#666; text-transform:uppercase; font-weight:700;">Bus Assignment</p>
+                                <p style="margin:0; font-size:13px; font-weight:700; color:#0f1c3f;">Trip #${tripId}</p>
+                                <p style="margin:2px 0 0; font-size:12px; color:#666; font-weight:600;">${busName} (Body No. ${bodyNo})</p>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                            <div>
+                                <p style="margin:0; font-size:10px; color:#666; text-transform:uppercase; font-weight:700;">Passenger Type</p>
+                                <p style="margin:0; font-size:14px; font-weight:600; color:#3b6cf7;">${type}</p>
+                            </div>
+                            <div style="text-align:right;">
+                                <p style="margin:0; font-size:10px; color:#666; text-transform:uppercase; font-weight:700;">Total Fare</p>
+                                <p style="margin:0; font-size:16px; font-weight:800; color:#0fa66e;">₱${parseFloat(String(amount).replace(/,/g, '')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="width:160px; background:#f8fafd; padding:20px; display:flex; flex-direction:column; justify-content:space-between; align-items:center;">
+                        <div style="text-align:center;">
+                            <p style="margin:0; font-size:10px; color:#666; text-transform:uppercase; font-weight:700;">Seat Number</p>
+                            <p style="margin:10px 0; font-size:42px; font-weight:800; color:#0f1c3f; line-height:1;">${seat}</p>
+                        </div>
+                        <div style="width:100%; height:40px; background:repeating-linear-gradient(90deg, #000, #000 2px, transparent 2px, transparent 4px, #000 4px, #000 8px, transparent 8px, transparent 10px, #000 10px, #000 12px, transparent 12px, transparent 14px); opacity:0.8;"></div>
+                        <p style="margin:10px 0 0; font-size:9px; color:#666; font-family:monospace; letter-spacing:1px;">${resId}</p>
+                    </div>
+                </div>`;
+            }
+
+            // ===================== THE PRINT LOGIC (FIXED) =====================
+            function showSuccessModal(payloads, results) {
+                const listContainer = document.getElementById('bookedPassengersList');
+                listContainer.innerHTML = '';
+
+                results.forEach(function(res, i) {
+                    if (res.success && res.data) {
+                        const d = res.data;
+                        const name = d.passenger_Name || payloads[i].passengerName || "Unknown";
+                        const resId = d.reservation_ID || "⚠️ Missing ID";
+                        const seat = d.seat_Number || payloads[i].seatNumber || "N/A";
+
+                        listContainer.innerHTML += `
+                            <div style="border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:10px;">
+                                <div style="font-weight:700; font-size:15px; color:#0f1c3f;">
+                                    <i class="fas fa-user-circle" style="color:#94a3b8; margin-right:6px;"></i> ${name}
+                                </div>
+                                <div style="font-size:12.5px; color:#64748b; margin-left: 24px; margin-top:2px;">
+                                    Seat ${seat} | ID: <strong style="color:var(--accent);">${resId}</strong>
+                                </div>
+                            </div>`;
+                    } else {
+                        const errorMsg = res.message || "Server Error";
+                        listContainer.innerHTML += `
+                            <div style="color:var(--red); padding:10px; border:1px solid var(--red-soft); border-radius:6px; margin-bottom:10px; font-size:13px;">
+                                <i class="fas fa-exclamation-triangle"></i> <strong>Failed:</strong> ${errorMsg}
+                            </div>`;
+                    }
+                });
+                if (listContainer.lastElementChild) {
+                    listContainer.lastElementChild.style.borderBottom = 'none';
+                    listContainer.lastElementChild.style.marginBottom = '0';
+                }
+                openModal('successModal');
+            }
+
+            function printNewlyBookedTickets() {
+                var printArea = document.getElementById('printArea');
+                printArea.innerHTML = '';
+
+                const resultsToPrint = window.successResults || successResults;
+
+                if (!resultsToPrint || resultsToPrint.length === 0) {
+                    alert("No ticket data found.");
+                    return;
+                }
+
+                resultsToPrint.forEach(function(res) {
+                    if (res.success && res.data) {
+                        const d = res.data;
+                        const name = d.passenger_Name || "N/A";
+                        const seat = d.seat_Number || "N/A";
+                        const resId = d.reservation_ID || "N/A";
+                        const type = d.passenger_Type || "N/A";
+                        const amount = d.total_Amount || 0;
+                        const route = d.trip ? `${d.trip.origin} - ${d.trip.destination}` : currentTripLabel;
+                                // This tells it to use the Trip's Scheduled Departure Date instead of the booking date
+            const dateStr = (d.trip && d.trip.scheduled_Departure_Time)
+                ? new Date(d.trip.scheduled_Departure_Time)
+                : new Date();
+                        const date = dateStr.toLocaleDateString('en-US', { month:'short', day:'2-digit', year:'numeric' });
+                        let dep = "N/A";
+                        if (d.trip && d.trip.departure_Time) {
+                            const depDate = new Date(d.trip.departure_Time);
+                            dep = depDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        }
+                        const tripId = currentTripId || "TBA";
+                        const busName = (d.trip && d.trip.bus) ? d.trip.bus.bus_Name : currentBusName;
+                        const bodyNo = (d.trip && d.trip.bus) ? d.trip.bus.body_No : currentBodyNo;
+
+                        printArea.innerHTML += generateTicketHTML(name, seat, resId, type, amount, route, date, dep, tripId, busName, bodyNo);
+                    }
+                });
+
+                if (printArea.innerHTML.trim() === '') return;
+
+                // NUCLEAR FAILSAFE: Move the print area directly to the body to avoid layout clippings
+                document.body.appendChild(printArea);
+                printArea.style.display = 'block';
+
+                // CRITICAL: 250ms delay so Chrome actually draws the ticket before snapping the photo
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        printArea.style.display = 'none';
+                    }, 1000);
+                }, 250);
+            }
+
+                    function printSelected() {
+                var checked = document.querySelectorAll('.reservation-checkbox:checked');
+
+                // 🛑 FIXED: Changed validation parameter to 'error' to invoke the red color theme
+                if (!checked.length) {
+                    if (typeof showToast === "function") {
+                        showToast('Select at least one reservation to print.', 'error');
+                    } else {
+                        alert('Select at least one reservation to print.');
+                    }
+                    return;
+                }
+
+                var printArea = document.getElementById('printArea');
+                printArea.innerHTML = '';
+
+                checked.forEach(function (cb) {
+                    printArea.innerHTML += generateTicketHTML(
+                        cb.getAttribute('data-name') || 'Unknown',
+                        cb.getAttribute('data-seat') || 'TBA',
+                        cb.getAttribute('data-id') || '---',
+                        cb.getAttribute('data-type') || 'Regular',
+                        cb.getAttribute('data-amount') || '0.00',
+                        cb.getAttribute('data-route') || 'N/A',
+                        cb.getAttribute('data-date') || 'N/A',
+                        cb.getAttribute('data-dep') || '—',
+                        cb.getAttribute('data-trip') || 'TBA',
+                        cb.getAttribute('data-bus') || 'TBA',
+                        cb.getAttribute('data-body') || 'TBA'
+                    );
+                });
+
+                // Move and Print
+                document.body.appendChild(printArea);
+                printArea.style.display = 'block';
+
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => { printArea.style.display = 'none'; printArea.innerHTML = ''; }, 1000);
+                }, 250);
+            }
+
+            // ===================== CLEAR DISPATCHED TRIPS =====================
+            function removeDispatchedTrip(tripId) {
+                var rows = document.querySelectorAll('#reservationsTableBody tr');
+                var hasMatch = false;
+
+                rows.forEach(function (row) {
+                    if (row.getAttribute('data-trip') === tripId) {
+                        hasMatch = true;
+                        row.style.transition = 'all 0.4s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'scale(0.95)';
+                        setTimeout(function() { row.remove(); }, 400);
+                    }
+                });
+
+                if (hasMatch) {
+                    setTimeout(function() {
+                        updateStatCards();
+                        filterReservations();
+                    }, 450);
+                }
+            }
+
+
+
+                   // ===================== REAL-TIME POLLING (DOM DIFFING) =====================
+            async function pollAndInjectReservations() {
+                const role = '@ViewBag.Role';
+                if (role !== "Admin" && role !== "HeadTeller") return;
+
+                try {
+                    const response = await fetch('/Home/GetLatestReservations');
+                    if (!response.ok) throw new Error('Fetch failed');
+                    const data = await response.json();
+
+                    const tbody = document.getElementById('reservationsTableBody');
+                    if (!tbody) return;
+
+                    let needsStatUpdate = false;
+
+                    // Process items in reverse (newest first)
+                    data.reverse().forEach(item => {
+                        const existingRow = document.querySelector(`tr[data-res-id="${item.resId}"]`);
+
+                        if (!existingRow) {
+                            // 1. New Reservation
+                            needsStatUpdate = true;
+                            const tr = document.createElement('tr');
+                            tr.setAttribute('data-status', item.status);
+                            tr.setAttribute('data-res-id', item.resId);
+                            tr.className = 'new-row-flash';
+                            tr.innerHTML = generateRowHTML(item);
+                            tbody.insertBefore(tr, tbody.firstChild);
+                        }
+                        else {
+                            // 2. Existing Reservation - Check Status
+                            if (existingRow.getAttribute('data-status') !== item.status) {
+                                needsStatUpdate = true;
+                                existingRow.setAttribute('data-status', item.status);
+
+                                // Update pill
+                                const pill = existingRow.querySelector('.res-status-pill');
+                                if (pill) {
+                                    pill.className = `res-status-pill status-${item.status.toLowerCase()}`;
+                                    pill.textContent = item.status;
+                                }
+
+                                // Handle Cancellation Logic
+                                if (item.status === 'Cancelled') {
+                                    const actionCol = existingRow.querySelector('.sticky-action-col');
+                                    if (actionCol) actionCol.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">Closed</span>';
+
+                                    existingRow.style.transition = 'background 0.4s';
+                                    existingRow.style.background = '#fff1f2';
+                                    setTimeout(() => { existingRow.style.background = ''; }, 1500);
+
+                                    // Trigger Seat Map update if active
+                                    if (typeof currentTripId !== 'undefined' && currentTripId === item.tripId && typeof loadSeatMap === 'function') {
+                                        loadSeatMap();
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Trigger updates if changes occurred
+                    if (needsStatUpdate) {
+                        const count = tbody.querySelectorAll('tr:not(.empty-state)').length;
+                        const badge = document.getElementById('resCountBadge');
+                        if (badge) badge.innerText = `${count} bookings`;
+
+                        if (typeof updateStatCards === 'function') updateStatCards();
+                        if (typeof filterReservations === 'function') filterReservations();
+                    }
+                } catch (err) {
+                    console.error("Polling error:", err);
+                }
+            }
+
+            // Helper to generate row HTML structure
+            function generateRowHTML(item) {
+                return `
+                    <td style="text-align:center;"><input type="checkbox" class="reservation-checkbox" data-id="${item.resId}"></td>
+                    <td class="ref-id-text">${item.resId}</td>
+                    <td style="font-weight:600; color:var(--navy-800);">#${item.tripId}</td>
+                    <td style="font-weight:600;">${item.busName}</td>
+                    <td style="color:var(--text-secondary);">${item.bodyNo}</td>
+                    <td style="font-weight:500;">${item.passengerName}</td>
+                    <td style="color:var(--text-secondary);">${item.contact || '—'}</td>
+                    <td style="color:var(--text-secondary);">${item.route}</td>
+                    <td style="color:var(--text-secondary); font-size:11px;">${item.createdAt}</td>
+                    <td style="color:var(--text-secondary);">${item.travelDate}</td>
+                    <td style="font-weight:500; font-size:12px;">${item.depTime}</td>
+                    <td style="font-weight:700; color:var(--navy-800);">${item.seat}</td>
+                    <td><span style="font-size:11px; font-weight:600; color:var(--text-secondary);">${item.type}</span></td>
+                    <td style="font-weight:600; color:var(--green);">₱${item.fare.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td style="color:var(--text-secondary); font-size:12px;">${item.tellerName}</td>
+                    <td style="text-align:center;"><span class="res-status-pill status-${item.status.toLowerCase()}">${item.status}</span></td>
+                    <td class="sticky-action-col" style="text-align:center;">
+                        ${item.status === 'Cancelled'
+                            ? '<span style="color:var(--text-muted); font-size:12px;">Closed</span>'
+                            : `<button class="btn-danger-sys" style="padding:5px 12px; font-size:11.5px;" onclick="cancelReservation('${item.resId}', this)"><i class="fas fa-ban"></i> Cancel</button>`}
+                    </td>`;
+            }
+
+            // Run polling
+            setInterval(pollAndInjectReservations, 2000);
+
+
+
+
+
+
+                    // Open and Populate the Modification Desk
+            function openEditReservationModal(buttonEl) {
+                // 1. Parse dataset variables from chosen row action button directly
+                document.getElementById("modReservationId").value = buttonEl.getAttribute("data-id");
+                document.getElementById("modCurrentFare").value = buttonEl.getAttribute("data-current-fare");
+
+                document.getElementById("lblPassenger").textContent = buttonEl.getAttribute("data-passenger");
+                document.getElementById("lblCurrentRoute").textContent = buttonEl.getAttribute("data-current-route");
+                document.getElementById("lblCurrentTripId").textContent = buttonEl.getAttribute("data-current-current-trip");
+                document.getElementById("lblCurrentSeat").textContent = buttonEl.getAttribute("data-current-seat");
+
+                const baseFare = parseFloat(buttonEl.getAttribute("data-current-fare")) || 0;
+                document.getElementById("lblCurrentFareDisplay").textContent = "₱" + baseFare.toLocaleString('en-US', {minimumFractionDigits: 2});
+
+                // 2. Clear inputs in workspace configuration target rows
+                document.getElementById("modTargetTripSelect").value = "";
+                document.getElementById("modNewSeatInput").value = "";
+
+                // Reset pricing parameters cleanly
+                document.getElementById("summaryNewFare").textContent = "₱0.00";
+                document.getElementById("summaryCreditPaid").textContent = "-₱" + baseFare.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById("summaryDueAmount").textContent = "₱0.00";
+
+                // 3. Render container window overlay block visible via flex mapping rules
+                const modal = document.getElementById("editReservationModal");
+                if(modal) modal.style.display = "flex";
+            }
+
+            // Compute the Financial Fare Delta Formula on drop-down changes
+            function calculateFareDelta() {
+                const selectEl = document.getElementById("modTargetTripSelect");
+                const chosenOption = selectEl.options[selectEl.selectedIndex];
+
+                const currentPaidAmount = parseFloat(document.getElementById("modCurrentFare").value) || 0;
+                let targetNewTripFare = 0;
+
+                if (selectEl.value && chosenOption) {
+                    targetNewTripFare = parseFloat(chosenOption.getAttribute("data-price")) || 0;
+                }
+
+                // Calculation: New Price minus original credit baseline
+                let financialDelta = targetNewTripFare - currentPaidAmount;
+                if (financialDelta < 0) financialDelta = 0; // Guard rule against issuing systematic negative refunds
+
+                // Render parameters into structural calculation summary layout
+                document.getElementById("summaryNewFare").textContent = "₱" + targetNewTripFare.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById("summaryDueAmount").textContent = "₱" + financialDelta.toLocaleString('en-US', {minimumFractionDigits: 2});
+            }
+
+            // Post transactional model update package directly onto our controller action endpoint map
+            async function submitTripModification() {
+                const resId = document.getElementById("modReservationId").value;
+                const targetTripId = document.getElementById("modTargetTripSelect").value;
+                const newSeatAssigned = document.getElementById("modNewSeatInput").value.trim().toUpperCase();
+
+                // Structural client validations entry gate
+                if(!targetTripId) {
+                    showToast("Please choose an upgraded target travel trip schedule.", "warning");
+                    return;
+                }
+                if(!newSeatAssigned) {
+                    showToast("Please input a seat coordinate identifier allocation.", "warning");
+                    return;
+                }
+
+                const payloadBundle = {
+                    ReservationId: parseInt(resId),
+                    NewTripId: parseInt(targetTripId),
+                    NewSeatNumber: newSeatAssigned
+                };
+
+                try {
+                    const response = await fetch('/Home/ProcessReservationModification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ""
+                        },
+                        body: JSON.stringify(payloadBundle)
+                    });
+
+                    const callbackData = await response.json();
+
+                    if (callbackData.success) {
+                        showToast(callbackData.message || "Reservation ticket re-routed cleanly!", "success");
+                        closeModal('editReservationModal');
+
+                        // Re-trigger view table load metrics after brief window interval delays
+                        setTimeout(() => { location.reload(); }, 1200);
+                    } else {
+                        showToast(callbackData.message || "Modification parameters validation failed.", "error");
+                    }
+                } catch(err) {
+                    console.error("Pipeline failure routing:", err);
+                    showToast("Database mapping engine error during transaction swap.", "error");
+                }
+            }
+
+           
+
+
+
+        </script>
+    }

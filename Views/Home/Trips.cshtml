@@ -1,0 +1,1675 @@
+﻿@using System.Text.Encodings.Web
+@using PUBReservationSystem.Models
+@{
+    ViewData["Title"] = "Trips & Schedules";
+    Layout = "_Layout";
+
+    var role = Context.Session.GetString("Role") ?? "";
+    bool isAdmin = role == "Admin";
+}
+
+<style>
+    /* PAGE ENTRANCE ANIMATIONS */
+    @@keyframes pageEnter {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .anim-1 {
+        animation: pageEnter 0.4s 0.05s both;
+    }
+
+    .anim-2 {
+        animation: pageEnter 0.4s 0.10s both;
+    }
+
+    .anim-3 {
+        animation: pageEnter 0.4s 0.15s both;
+    }
+
+    .anim-4 {
+        animation: pageEnter 0.4s 0.20s both;
+    }
+
+    /* STAT CARDS (Dashboard Style) */
+    /* STAT CARDS (Dashboard Style) */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: var(--surface, #ffffff);
+        border-radius: var(--radius-lg, 16px);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border: 1px solid var(--border, #e2e8f0);
+        border-top-width: 4px; /* Thicker top border */
+        box-shadow: 0 4px 6px rgba(15, 28, 63, 0.02);
+        transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Specific Card Colors & Hover States */
+
+    /* 1. Total (Blue) */
+    .card-total {
+        border-top-color: var(--accent, #3b82f6);
+    }
+
+        .card-total:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent, #3b82f6);
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+        }
+
+    /* 2. Scheduled (Green) */
+    .card-scheduled {
+        border-top-color: var(--green, #10b981);
+    }
+
+        .card-scheduled:hover {
+            transform: translateY(-5px);
+            border-color: var(--green, #10b981);
+            box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15);
+        }
+
+    /* 3. In Transit (Orange) */
+    .card-intransit {
+        border-top-color: #ea580c;
+    }
+
+        .card-intransit:hover {
+            transform: translateY(-5px);
+            border-color: #ea580c;
+            box-shadow: 0 12px 24px rgba(234, 88, 12, 0.15);
+        }
+
+    /* 4. Completed (Purple) */
+    .card-completed {
+        border-top-color: #9333ea;
+    }
+
+        .card-completed:hover {
+            transform: translateY(-5px);
+            border-color: #9333ea;
+            box-shadow: 0 12px 24px rgba(147, 51, 234, 0.15);
+        }
+
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .icon-total {
+        background: var(--navy-50);
+        color: var(--accent);
+    }
+
+    .icon-sched {
+        background: var(--green-soft);
+        color: var(--green);
+    }
+
+    .icon-transit {
+        background: #fff7ed;
+        color: #ea580c;
+    }
+
+    .icon-comp {
+        background: #f3e8ff;
+        color: #9333ea;
+    }
+
+    .stat-info h3 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--navy-800);
+        line-height: 1.2;
+    }
+
+    .stat-info span {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* TOOLBAR */
+    .filter-toolbar-card {
+        background: var(--surface);
+        padding: 16px 20px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        margin-bottom: 24px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .toolbar-left {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex: 1;
+    }
+
+    .toolbar-right {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    /* TRIPS GRID */
+    .trips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 20px;
+        padding-bottom: 20px;
+    }
+
+    .trip-card {
+        background: white;
+        border-radius: 16px;
+        padding: 22px;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 6px rgba(15, 28, 63, 0.02);
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+        .trip-card:hover {
+            box-shadow: 0 8px 16px rgba(15, 28, 63, 0.06);
+        }
+
+    .trip-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .trip-title-area {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .bus-icon-wrap {
+        width: 40px;
+        height: 40px;
+        background: var(--navy-50);
+        color: var(--navy-800);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .trip-title-area h5 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--navy-800);
+    }
+
+    .trip-title-area span {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    /* STATUS PILLS */
+    .trip-status {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .status-Scheduled {
+        background: var(--green-soft);
+        color: var(--green);
+    }
+
+    .status-In-Transit {
+        background: #fff7ed;
+        color: #ea580c;
+    }
+
+    .status-Completed {
+        background: #f3e8ff;
+        color: #9333ea;
+    }
+
+    .status-Cancelled {
+        background: var(--red-soft);
+        color: var(--red);
+    }
+
+    /* Dispatcher Editable Pill */
+    .status-editable {
+        cursor: pointer;
+        border-style: dashed;
+    }
+
+        .status-editable:hover {
+            filter: brightness(0.95);
+            transform: scale(1.02);
+        }
+
+    /* TRIP DETAILS */
+    .trip-details {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #f8fafd;
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 13.5px;
+        color: var(--text-primary);
+    }
+
+        .detail-row i {
+            width: 16px;
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .detail-row strong {
+            color: var(--navy-800);
+            font-weight: 600;
+        }
+
+    /* MODALS (From Reservation CSS) */
+    @@keyframes modalFadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+    @@keyframes modalFadeOut {
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+        }
+    }
+    @@keyframes modalPopIn {
+        from {
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+    }
+    @@keyframes modalPopOut {
+        from {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        to {
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+        }
+    }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15,28,63,0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(3px);
+    }
+
+        .modal-overlay.show {
+            display: flex;
+            animation: modalFadeIn 0.25s ease-out forwards;
+        }
+
+        .modal-overlay.hide {
+            display: flex;
+            animation: modalFadeOut 0.2s ease-in forwards;
+        }
+
+    .sys-modal {
+        background: white;
+        border-radius: var(--radius-lg, 16px);
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-overlay.show .sys-modal {
+        animation: modalPopIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+    }
+
+    .modal-overlay.hide .sys-modal {
+        animation: modalPopOut 0.2s ease-in forwards;
+    }
+
+    .modal-header {
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .modal-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--navy-800);
+        }
+
+    .btn-close-modal {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+        .btn-close-modal:hover {
+            color: var(--red);
+        }
+
+    .modal-body {
+        padding: 24px;
+        flex: 1;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        background: #f8fafd;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: border-color 0.2s;
+    }
+
+        .form-control:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59,108,247,0.1);
+        }
+
+    .trip-footer {
+        display: flex;
+        justify-content: space-between; /* Pushes ID to left, buttons to right */
+        align-items: center;
+        border-top: 1px dashed #e2e8f0;
+        margin-top: auto;
+        padding-top: 12px;
+    }
+
+    .dispatch-btn {
+        padding: 5px 12px;
+        font-size: 11px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        margin-left: 8px;
+        transition: 0.2s;
+    }
+
+    .btn-dispatch {
+        background: #10b981;
+        color: white;
+    }
+    /* Green */
+    .btn-cancel {
+        background: #ef4444;
+        color: white;
+    }
+    /* Red */
+    .btn-dispatch:hover {
+        background: #059669;
+    }
+
+    .btn-cancel:hover {
+        background: #dc2626;
+    }
+
+    /* Capacity Pill Styles */
+    .capacity-pill {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 6px;
+        color: white;
+    }
+
+    .cap-green {
+        background: #10b981;
+    }
+
+    .cap-yellow {
+        background: #f59e0b;
+    }
+
+    .cap-red {
+        background: #ef4444;
+    }
+
+    .btn-book-teller {
+        padding: 5px 12px;
+        font-size: 11px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+        transition: 0.2s;
+    }
+
+        .btn-book-teller:hover {
+            background: #2563eb;
+        }
+
+    /* Adds a red asterisk to any label with the 'required' class */
+    .required::after {
+        content: ' *';
+        color: #ef4444; /* Matches your system's red theme */
+        font-weight: 800;
+        margin-left: 3px;
+    }
+</style>
+
+@* PAGE HEADER *@
+<div class="page-header anim-1" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
+    <div>
+        <h2 style="font-size:20px; font-weight:800; color:var(--navy-800); margin:0; display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-route" style="color:var(--accent);"></i> Trips & Schedules
+        </h2>
+        <p style="font-size:13px; color:var(--text-secondary); margin:3px 0 0;">
+            Manage fleet scheduling, routes, and operational statuses.
+        </p>
+        <p style="color:red;">DEBUG: Current Session Branch ID = @ViewBag.DebugBranchId</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+        @if (ViewBag.Role == "Admin")
+        {
+            <span style="font-size:13px; font-weight:600; color:var(--green); display:flex; align-items:center; gap:6px; background: var(--green-soft); padding: 6px 12px; border-radius: 20px;">
+                <i class="fas fa-user-cog"></i> Dispatch & Admin Control
+            </span>
+        }
+        else
+        {
+            <span style="font-size:13px; font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-eye"></i> View-Only Access
+            </span>
+        }
+    </div>
+</div>
+
+@* STAT CARDS *@
+<div class="stat-grid anim-2">
+    <div class="stat-card card-total">
+        <div class="stat-icon icon-total"><i class="fas fa-list-ul"></i></div>
+        <div class="stat-info">
+            <h3 id="stat-total">@ViewBag.TotalTrips</h3>
+            <span>Total Trips</span>
+        </div>
+    </div>
+    <div class="stat-card card-scheduled">
+        <div class="stat-icon icon-sched"><i class="fas fa-clock"></i></div>
+        <div class="stat-info">
+            <h3 id="stat-scheduled">@ViewBag.Scheduled</h3>
+            <span>Scheduled</span>
+        </div>
+    </div>
+    <div class="stat-card card-intransit">
+        <div class="stat-icon icon-transit"><i class="fas fa-road"></i></div>
+        <div class="stat-info">
+            <h3 id="stat-intransit">@ViewBag.InTransit</h3>
+            <span>In Transit</span>
+        </div>
+    </div>
+    <div class="stat-card card-completed">
+        <div class="stat-icon icon-comp"><i class="fas fa-check-double"></i></div>
+        <div class="stat-info">
+            <h3 id="stat-completed">@ViewBag.Completed</h3>
+            <span>Completed</span>
+        </div>
+    </div>
+</div>
+
+@* FILTER TOOLBAR *@
+<div class="filter-toolbar-card anim-3">
+    <div class="toolbar-left">
+        <div style="position:relative; width: 280px;">
+            <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px;"></i>
+            <input type="text" id="searchTrip" class="form-control" style="padding-left:38px;" placeholder="Search route (e.g. Cebu to Ormoc)..." onkeyup="filterTrips()">
+        </div>
+        <select id="filterStatus" class="form-control" style="width:160px;" onchange="filterTrips()">
+            <option value="">All Statuses</option>
+            <option value="Scheduled">Scheduled</option>
+            <option value="In Transit">In Transit</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+        </select>
+        <button class="btn-ghost-sys" onclick="resetTripFilters()"><i class="fas fa-times"></i> Clear</button>
+    </div>
+
+    <div class="toolbar-right">
+        @if (ViewBag.Role == "Admin")
+        {
+            <button class="btn-primary-sys" onclick="openModal('createTripModal')">
+                <i class="fas fa-plus"></i> Create New Trip
+            </button>
+        }
+    </div>
+</div>
+
+@* TRIPS GRID *@
+<div class="trips-grid anim-4" id="tripsGrid">
+    @foreach (var trip in ((List<PUBReservationSystem.Models.Trip>)ViewBag.OutgoingTrips).OrderByDescending(t => t.Scheduled_Departure_Time))
+    {
+        var safeStatusClass = trip.Status?.Trim().Replace(" ", "-") ?? "Unknown";
+        var isDispatcher = (ViewBag.Role == "Admin" || ViewBag.Role == "Dispatcher");
+        var isTeller = (ViewBag.Role == "Teller" || ViewBag.Role == "HeadTeller");
+
+        // --- DYNAMIC BOOKING MATH ---
+        // Ensure trip.Trip_ID is treated as a string for the Dictionary lookup
+        // --- DYNAMIC BOOKING MATH ---
+        var bookingCounts = ViewBag.BookingCounts as Dictionary<string, int>;
+
+        // ✅ FIX: Added .Trim() back to strip the SQL whitespaces!
+        string tripIdKey = trip.Trip_ID?.Trim();
+
+        int booked = (bookingCounts != null && tripIdKey != null && bookingCounts.ContainsKey(tripIdKey))
+        ? bookingCounts[tripIdKey]
+        : 0;
+        int total = 45; // Default capacity
+        int vacant = total - booked;
+        string capClass = vacant > 10 ? "cap-green" : (vacant > 0 ? "cap-yellow" : "cap-red");
+
+        // Format Bus Type
+        string busType = trip.Bus?.Bus_Type == "AC" ? "Aircon" : (trip.Bus?.Bus_Type == "OR" ? "Ordinary" : "Unknown");
+
+        <div class="trip-card" data-route="@(trip.Origin?.ToLower() + " " + trip.Destination?.ToLower())" data-status="@trip.Status">
+
+            @* HEADER *@
+            <div class="trip-header">
+                <div class="trip-title-area">
+                    <div class="bus-icon-wrap"><i class="fas fa-bus-alt"></i></div>
+                    <div>
+                        <h5>@(trip.Bus?.Bus_Name ?? "Unknown Bus")</h5>
+                        <span style="text-transform: uppercase;">
+                            @(trip.Bus?.Body_Bus_Number ?? "No Plate") &bull; @busType
+                        </span>
+                    </div>
+                </div>
+                <span class="trip-status status-@safeStatusClass @(isDispatcher ? "status-editable" : "")"
+                      @Html.Raw(isDispatcher ? $"onclick=\"openStatusModal('{trip.Trip_ID}', '{trip.Status}')\"" : "")
+                      title="Click to update status">
+                    @trip.Status
+                </span>
+            </div>
+
+            @* BODY DETAILS *@
+            <div class="trip-details" style="display: flex; flex-direction: column; gap: 12px;">
+
+                <div class="detail-row">
+                    <i class="fas fa-map-marker-alt" style="color: var(--accent);"></i>
+                    <span><strong>@trip.Origin</strong> &rarr; <strong>@trip.Destination</strong></span>
+                </div>
+
+                <div class="detail-row">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>@(trip.Scheduled_Departure_Time?.ToString("MMM dd, yyyy — hh:mm tt") ?? "TBA")</span>
+                </div>
+
+                <div class="detail-row" style="justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 2px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <i class="fas fa-ticket-alt" style="color: var(--green);"></i>
+                        <span>Fare: <strong>₱@trip.Base_Fare.ToString("N2")</strong></span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <i class="fas fa-users" style="color: var(--navy-800);"></i>
+                        <span>Booked: <strong>@booked</strong> / @total Pax</span>
+                    </div>
+                </div>
+
+                <div class="detail-row" style="justify-content: space-between; font-size: 11.5px;">
+                    <div style="display: flex; gap: 8px; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Driver">
+                        <i class="fas fa-steering-wheel" style="color: var(--text-muted);"></i>
+                        <span><strong>DRV:</strong> @(trip.Driver != null ? $"[{trip.Driver.Employee_ID}] {trip.Driver.Full_Name}" : "Unassigned")</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Conductor">
+                        <i class="fas fa-user-tag" style="color: var(--text-muted);"></i>
+                        <span><strong>CON:</strong> @(trip.Conductor != null ? $"[{trip.Conductor.Employee_ID}] {trip.Conductor.Full_Name}" : "None")</span>
+                    </div>
+                </div>
+            </div>
+
+            @* FOOTER *@
+            <div class="trip-footer">
+                <div style="font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px;">
+                    TRIP ID: @trip.Trip_ID
+                </div>
+                <div class="action-buttons">
+                    @if (isTeller && vacant > 0)
+                    {
+                        <button class="btn-book-teller" onclick="window.location.href='/Home/Reservations?tripId=@trip.Trip_ID'">
+                            <i class="fas fa-ticket-alt"></i> Book Now
+                        </button>
+                    }
+                    @if (isDispatcher && trip.Status == "Scheduled" && trip.Scheduled_Departure_Time?.Date == DateTime.Today)
+                    {
+                        <button class="dispatch-btn btn-dispatch" onclick="dispatchTrip('@trip.Trip_ID')">Dispatch</button>
+                        <button class="dispatch-btn btn-cancel" onclick="cancelTrip('@trip.Trip_ID')">Cancel</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<hr class="my-5" />
+
+<h3 class="mb-4">Incoming Buses (Arriving at @ViewBag.MyBranch)</h3>
+
+@if (ViewBag.IncomingTrips != null && ViewBag.IncomingTrips.Count > 0)
+{
+    <div class="trips-grid">
+        @foreach (var trip in ViewBag.IncomingTrips)
+        {
+            <div class="trip-card">
+                <div class="trip-header">
+                    <div class="trip-title-area">
+                        <div class="bus-icon-wrap" style="background: rgba(13, 202, 240, 0.1); color: #0dcaf0;">
+                            <i class="fas fa-bus-alt"></i>
+                        </div>
+                        <div>
+                            <h5>@trip.Bus.Bus_Name</h5>
+                            <span>@trip.Bus.Plate_Number</span>
+                        </div>
+                    </div>
+
+                    @* NEW FIX: Dynamic Badge Rendering *@
+                    @if (trip.Status == "Completed")
+                    {
+                        <span class="trip-status status-Completed">ARRIVED</span>
+                    }
+                    else
+                    {
+                        <span class="trip-status status-In-Transit">INCOMING</span>
+                    }
+                </div>
+
+                <div class="trip-details">
+                    <div class="detail-row">
+                        <i class="fas fa-map-marker-alt" style="color: var(--accent);"></i>
+                        <span>From: <strong>@trip.Origin</strong></span>
+                    </div>
+                    <div class="detail-row">
+                        <i class="fas fa-clock"></i>
+                        <span>Dispatched: <strong>@(trip.Actual_Dispatch_Time?.ToString("hh:mm tt") ?? "N/A")</strong></span>
+                    </div>
+
+                    @* Added the Driver/Conductor info to match your main cards *@
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div class="detail-row" title="Driver">
+                            <i class="fas fa-id-badge"></i>
+                            <span style="font-size: 12px;">@(trip.Driver?.Full_Name ?? "Unassigned")</span>
+                        </div>
+                        <div class="detail-row" title="Conductor">
+                            <i class="fas fa-user-tag"></i>
+                            <span style="font-size: 12px;">@(trip.Conductor?.Full_Name ?? "None")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trip-footer">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <div style="font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px;">
+                            TRIP ID: @trip.Trip_ID
+                        </div>
+
+                        @if (trip.Status != null && trip.Status.Trim().Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <div style="font-size: 11px; font-weight: 600; color: #8b5cf6; letter-spacing: 0.5px;">
+                                <i class="fas fa-check-double"></i> ARRIVED: @(trip.Arrival_Time?.ToString("MMM dd, hh:mm tt") ?? "N/A")
+                            </div>
+                        }
+                    </div>
+
+                    @* THIS IS THE NEW LOGIC FOR INCOMING BUSES *@
+                    @if (trip.Status == "In Transit")
+                    {
+                        <div class="action-buttons" style="margin-top: 10px;">
+                            <button class="btn btn-success w-100" onclick="markTripArrived('@trip.Trip_ID')">
+                                <i class="fas fa-check-circle"></i> Mark as Arrived
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-secondary">
+        <i class="fas fa-info-circle"></i> No incoming buses at this time.
+    </div>
+}
+
+
+@* ============================================== *@
+@* MODAL: CREATE TRIP (DISPATCHER/ADMIN ONLY)     *@
+@* ============================================== *@
+@if (ViewBag.Role == "Admin")
+{
+    <div id="createTripModal" class="modal-overlay">
+    <div class="sys-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4><i class="fas fa-plus-circle"></i> Create New Schedule</h4>
+            <button class="btn-close-modal" type="button" onclick="closeModal('createTripModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="createTripForm" onsubmit="submitNewTrip(event)">
+            <div class="modal-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                
+                <div class="form-group-sys">
+                    <label class="form-label-sys required">ASSIGNED BUS</label>
+                    <select id="assignedBusId" class="form-control-sys" required>
+                        <option value="">-- Select Fleet Vehicle --</option>
+                        @if (ViewBag.AvailableBuses != null)
+                        {
+                            foreach (var bus in (List<PUBReservationSystem.Models.Bus>)ViewBag.AvailableBuses)
+                            {
+                                <option value="@bus.Bus_ID">[@bus.Plate_Number] - @(bus.Bus_Name ?? "Unnamed")</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys required">ORIGIN BRANCH</label>
+                        <select id="originBranchId" class="form-control-sys" required onchange="calculateFare()">
+                        <option value="">-- Select Origin --</option>
+                        @if (ViewBag.Branches != null)
+                        {
+                            foreach (var b in (List<PUBReservationSystem.Models.Branch>)ViewBag.Branches)
+                            {
+                                <option value="@b.Branch_ID">@b.Branch_Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                    <div class="form-group-sys">
+                        <label class="form-label-sys required">DESTINATION BRANCH</label>
+                        <select id="destBranchId" class="form-control-sys" required onchange="calculateFare()">
+                            <option value="">-- Select Destination --</option>
+
+                            @if (ViewBag.Routes != null)
+                            {
+                                @foreach (var destination in ViewBag.Routes)
+                                {
+                                    <option value="@destination">@destination</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys required">ASSIGNED DRIVER</label>
+                    <select id="assignedDriverId" class="form-control-sys" required>
+                        <option value="">-- Select Driver --</option>
+                        @if (ViewBag.AvailableDrivers != null)
+                        {
+                            foreach (var driver in (List<PUBReservationSystem.Models.Employee>)ViewBag.AvailableDrivers)
+                            {
+                                <option value="@driver.Employee_ID">@driver.Full_Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys">CONDUCTOR (OPTIONAL)</label>
+                    <select id="assignedConductorId" class="form-control-sys">
+                        <option value="">-- Select Conductor --</option>
+                        @if (ViewBag.AvailableConductors != null)
+                        {
+                            foreach (var conductor in (List<PUBReservationSystem.Models.Employee>)ViewBag.AvailableConductors)
+                            {
+                                <option value="@conductor.Employee_ID">@conductor.Full_Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys required">DEPARTURE DATE</label>
+                    <input type="date" id="newTripDate" class="form-control-sys" required min="@DateTime.Now.ToString("yyyy-MM-dd")">
+                </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys required">DEPARTURE TIME</label>
+                    <input type="time" id="newTripTime" class="form-control-sys" required>
+                </div>
+
+                <div class="form-group-sys">
+                    <label class="form-label-sys required">BASE FARE (₱)</label>
+                    <input type="number" id="newTripFare" step="0.01" min="1" class="form-control-sys" placeholder="0.00" required>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost-sys" onclick="closeModal('createTripModal')">Cancel</button>
+                <button type="submit" class="btn-primary-sys" id="btnSaveTrip">
+                    <i class="fas fa-save"></i> Save Schedule
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    @* ============================================== *@
+    @* MODAL: UPDATE STATUS                           *@
+    @* ============================================== *@
+    <div id="updateStatusModal" class="modal-overlay">
+        <div class="sys-modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-sync-alt"></i> Update Trip Status</h4>
+                <button class="btn-close-modal" onclick="closeModal('updateStatusModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editTripId" />
+                <input type="hidden" id="oldTripStatus" />
+                <div class="form-group">
+                    <label>Current Status Target</label>
+                    <select class="form-control" id="editTripStatus">
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="In Transit">In Transit</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost-sys" onclick="closeModal('updateStatusModal')">Cancel</button>
+                <button class="btn-primary-sys" style="background:var(--accent);" onclick="submitStatusUpdate()">Update Status</button>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+        function completeTrip(tripId) {
+        if (!confirm("Has this bus safely arrived?")) return;
+
+        fetch('/Home/UpdateTripStatus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            // FIX: Safe encoding
+            body: new URLSearchParams({ tripId: tripId, newStatus: 'Completed' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert("Error: " + data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+
+@section Scripts {
+    <script>
+        const isDispatcher = @(ViewBag.Role == "Dispatcher" ? "true" : "false");
+        // --- ANIMATE NUMBERS FUNCTION ---
+        function animateValue(id, start, end, duration) {
+            let obj = document.getElementById(id);
+            if (!obj) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.innerHTML = end; // Ensure exact final value
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+
+        function markTripArrived(tripId) {
+            if (!confirm("Confirm that this bus has arrived at your branch?")) return;
+
+            fetch('/Home/MarkTripArrived', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'tripId=' + encodeURIComponent(tripId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Reload to move the card to 'Completed' status
+                } else {
+                    alert(data.message || 'Error updating status.');
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+                // DISPATCH TRIP FUNCTION
+                function dispatchTrip(tripId) {
+            if (!confirm("Confirm dispatching this bus?")) return;
+
+            fetch('/Home/UpdateTripStatus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                // FIX: URLSearchParams safely encodes the space in "In Transit"
+                body: new URLSearchParams({ tripId: tripId, newStatus: 'In Transit' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while communicating with the server.");
+            });
+        }
+
+        // CANCEL TRIP FUNCTION (Since you have a Cancel button next to it!)
+                function cancelTrip(tripId) {
+            if (!confirm("Are you sure you want to cancel this trip?")) return;
+
+            fetch('/Home/UpdateTripStatus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                // FIX: Safe encoding
+                body: new URLSearchParams({ tripId: tripId, newStatus: 'Cancelled' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            });
+        }
+
+
+
+                // ==========================================
+        // ROUTE ENFORCEMENT & CASCADING DROPDOWNS
+        // ==========================================
+        var activeRoutes = [];
+        var allBranchOptions = []; // Stores the original HTML branches
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. Backup the original destination options before we erase them
+            var destSelect = document.getElementById('destBranchId');
+            for (var i = 1; i < destSelect.options.length; i++) {
+                allBranchOptions.push({
+                    value: destSelect.options[i].value,
+                    text: destSelect.options[i].text
+                });
+            }
+
+            // 2. Fetch valid routes from the database
+            fetch('/Home/GetAllRoutes')
+                .then(res => res.json())
+                .then(data => {
+                    activeRoutes = data;
+                    initCascadingLogic();
+                })
+                .catch(err => console.error("Error loading routes:", err));
+        });
+
+        // Prevent old HTML onclicks from throwing errors
+        window.calculateFare = function() { };
+
+        // HELPER: Strips "Branch" and "City" so "Cebu City" matches "Cebu Branch"
+        const normalize = (str) => {
+            if (!str) return '';
+            return str.toLowerCase()
+                      .replace('branch', '')
+                      .replace('city', '')
+                      .trim();
+        };
+
+        function initCascadingLogic() {
+            var originSelect = document.getElementById('originBranchId');
+            var destSelect = document.getElementById('destBranchId');
+            var fareInput = document.getElementById('newTripFare');
+
+            // STEP 1: Lock destination dropdown on load
+            destSelect.disabled = true;
+
+            // STEP 2: Disable invalid origins
+            var validOriginNames = activeRoutes.map(r => normalize(r.origin));
+            for (var i = 1; i < originSelect.options.length; i++) {
+                var branchName = normalize(originSelect.options[i].text);
+                if (!validOriginNames.includes(branchName)) {
+                    originSelect.options[i].style.display = 'none';
+                    originSelect.options[i].disabled = true;
+                }
+            }
+
+            // STEP 3: Rebuild destinations when Origin changes
+            originSelect.addEventListener('change', function() {
+                // Always reset the destination dropdown and fare first
+                destSelect.innerHTML = '<option value="">-- Select Destination --</option>';
+                fareInput.value = '';
+
+                if (this.selectedIndex <= 0) {
+                    destSelect.disabled = true;
+                    return;
+                }
+
+                destSelect.disabled = false;
+                var selectedOriginName = normalize(this.options[this.selectedIndex].text);
+
+                // Find destinations that ONLY match the chosen origin
+                var validDestNames = activeRoutes
+                    .filter(r => normalize(r.origin) === selectedOriginName)
+                    .map(r => normalize(r.destination));
+
+                // Rebuild destination dropdown using the backed-up options
+                allBranchOptions.forEach(opt => {
+                    var optNormalized = normalize(opt.text);
+                    if (validDestNames.includes(optNormalized)) {
+                        var newOption = document.createElement('option');
+                        newOption.value = opt.value;
+                        newOption.text = opt.text;
+                        destSelect.appendChild(newOption);
+                    }
+                });
+            });
+
+            // STEP 4: Auto-fill fare when Destination changes
+            destSelect.addEventListener('change', function() {
+                if (this.selectedIndex <= 0 || originSelect.selectedIndex <= 0) {
+                    fareInput.value = '';
+                    return;
+                }
+
+                var selectedOriginName = normalize(originSelect.options[originSelect.selectedIndex].text);
+                var selectedDestName = normalize(this.options[this.selectedIndex].text);
+
+                var matchingRoute = activeRoutes.find(r =>
+                    normalize(r.origin) === selectedOriginName &&
+                    normalize(r.destination) === selectedDestName
+                );
+
+                if (matchingRoute) {
+                    var fare = matchingRoute.baseFare || matchingRoute.base_Fare || 0;
+                    fareInput.value = parseFloat(fare).toFixed(2);
+                } else {
+                    fareInput.value = '';
+                }
+            });
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+         
+
+
+
+
+
+
+
+
+
+
+
+
+        // --- STAT COUNTER HELPERS ---
+        function updateStatCounter(id, delta) {
+            let el = document.getElementById(id);
+            if (!el) return;
+            let current = parseInt(el.textContent) || 0;
+            let target = current + delta;
+            if (target < 0) target = 0;
+            animateValue(id, current, target, 400);
+        }
+
+
+        // --- AUTO-FILL FARE BASED ON ROUTE SELECTION ---
+        function handleRouteSelection() {
+            var destSelect = document.getElementById('newTripDest');
+            var fareInput = document.getElementById('newTripFare');
+
+            if (destSelect.selectedIndex > 0) {
+                var opt = destSelect.options[destSelect.selectedIndex];
+                var fare = opt.getAttribute('data-fare');
+
+                if (fare && fare > 0) {
+                    fareInput.value = parseFloat(fare).toFixed(2);
+                } else {
+                    fareInput.value = '';
+                }
+            } else {
+                fareInput.value = '';
+            }
+        }
+
+        // --- FORMATTERS ---
+        function formatLocationName(inputElement) {
+            let val = inputElement.value.replace(/[^a-zA-Z\s]/g, '');
+            let words = val.split(' ');
+            for(let i = 0; i < words.length; i++) {
+                if(words[i].length > 0) {
+                    words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1).toLowerCase();
+                }
+            }
+            inputElement.value = words.join(' ');
+        }
+
+        function formatTo12Hour(timeStr) {
+            let [hour, minute] = timeStr.split(':');
+            let h = parseInt(hour);
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            h = h ? h : 12;
+            let paddedHour = h < 10 ? '0' + h : h;
+            return `${paddedHour}:${minute} ${ampm}`;
+        }
+
+        function formatDateShort(dateStr) {
+            const date = new Date(dateStr);
+            const options = { month: 'short', day: '2-digit', year: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        // --- MODAL CONTROLS ---
+        function openModal(id) {
+            var m = document.getElementById(id);
+            if (!m) return;
+            m.classList.remove('hide');
+            m.classList.add('show');
+            document.body.style.overflow = 'hidden';
+
+            if(id === 'createTripModal') {
+                document.getElementById('createTripForm').reset();
+                // ✅ FIXED: Removed fetchRoutesForTrips() to eliminate client-side script crashes
+            }
+        }
+
+        function closeModal(id) {
+            var m = document.getElementById(id);
+            if (!m) return;
+            m.classList.remove('show');
+            m.classList.add('hide');
+            setTimeout(function () {
+                m.classList.remove('hide');
+                if (!document.querySelector('.modal-overlay.show'))
+                    document.body.style.overflow = '';
+            }, 220);
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var open = document.querySelectorAll('.modal-overlay.show');
+                if (open.length) closeModal(open[open.length - 1].id);
+            }
+        });
+
+
+
+        // ==========================================
+// BACKGROUND POLLING FOR LIVE STATS
+// ==========================================
+const myBranchId = parseInt('@ViewBag.DebugBranchId') || 0;
+
+function fetchLiveStats() {
+    // Prevent polling if branch ID isn't loaded properly
+    if (myBranchId === 0) return; 
+
+    fetch(`/Home/GetLiveStats?branchId=${myBranchId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Get current numbers on the screen
+                let currentTotal = parseInt(document.getElementById('stat-total').innerText) || 0;
+                let currentSched = parseInt(document.getElementById('stat-scheduled').innerText) || 0;
+                let currentTransit = parseInt(document.getElementById('stat-intransit').innerText) || 0;
+                let currentComp = parseInt(document.getElementById('stat-completed').innerText) || 0;
+
+                // Animate ONLY if the numbers have changed!
+                if (currentTotal !== data.total) animateValue('stat-total', currentTotal, data.total, 400);
+                if (currentSched !== data.scheduled) animateValue('stat-scheduled', currentSched, data.scheduled, 400);
+                if (currentTransit !== data.inTransit) animateValue('stat-intransit', currentTransit, data.inTransit, 400);
+                if (currentComp !== data.completed) animateValue('stat-completed', currentComp, data.completed, 400);
+            }
+        })
+        .catch(err => console.error("Error fetching live stats: ", err));
+}
+
+// Start the polling loop. 5000 = 5 seconds. 
+// Change to 10000 if you want it to check every 10 seconds instead.
+setInterval(fetchLiveStats, 2000);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // --- FILTERING ---
+                function filterTrips() {
+            // 1. Get values from the inputs
+            const searchTerm = document.getElementById('searchTrip').value.toLowerCase();
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            // 2. Get all trip cards
+            const cards = document.querySelectorAll('.trip-card');
+            let staggerDelay = 0;
+
+            cards.forEach(card => {
+                // Grab route from data-attribute (make sure your card has data-route="origin destination")
+                const route = card.getAttribute('data-route') || "";
+                const status = card.getAttribute('data-status') || "";
+
+                // 3. Logic: Does it match the Search AND the Status?
+                const matchesSearch = route.includes(searchTerm);
+                const matchesStatus = (statusFilter === "" || status === statusFilter);
+
+                if (matchesSearch && matchesStatus) {
+                    card.style.display = 'flex'; // Show card
+
+                    // Animation Trigger
+                    card.style.animation = 'none';
+                    void card.offsetWidth; // Force Reflow
+                    card.style.animation = `modalPopIn 0.4s ease-out ${staggerDelay}s forwards`;
+                    staggerDelay += 0.05; // Stagger effect
+                } else {
+                    card.style.display = 'none'; // Hide card
+                }
+            });
+        }
+
+        function resetTripFilters() {
+            document.getElementById('searchTrip').value = "";
+            document.getElementById('filterStatus').value = "";
+            filterTrips(); // Re-run filter to show all
+
+            // ✅ Add the success toast notification
+            if (typeof showToast === "function") {
+                showToast("Trip filters reset successfully!", "success");
+            }
+        }
+
+        // --- DISPATCHER ONLY: CREATE TRIP ---
+                function submitNewTrip(e) {
+            e.preventDefault();
+
+            // 1. UI Feedback
+            var btn = document.getElementById('btnSaveTrip');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            // 2. Capture Form Data
+            var busId = document.getElementById('assignedBusId').value;
+            var originBranchId = document.getElementById('originBranchId').value;
+            var destBranchId = document.getElementById('destBranchId').value;
+            var driverId = document.getElementById('assignedDriverId').value;
+            var conductorId = document.getElementById('assignedConductorId').value;
+            var date = document.getElementById('newTripDate').value;
+            var time = document.getElementById('newTripTime').value;
+            var fare = document.getElementById('newTripFare').value;
+
+            // Get the display TEXT of the select elements for Origin/Destination names
+            var originSelect = document.getElementById('originBranchId');
+            var originName = originSelect.options[originSelect.selectedIndex].text;
+
+            var destSelect = document.getElementById('destBranchId');
+            var destName = destSelect.options[destSelect.selectedIndex].text;
+
+            // 3. Strict Validation
+            if (!busId || !originBranchId || !destBranchId || !driverId || !date || !time || !fare) {
+                alert('Please fill in all required fields.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Save Schedule';
+                return;
+            }
+
+            // 4. Build Payload
+            var formData = new URLSearchParams();
+            formData.append('busId', busId);
+            formData.append('driverId', driverId);
+            formData.append('conductorId', conductorId);
+            formData.append('origin', originName);            // String Name
+            formData.append('destination', destName);        // String Name
+            formData.append('baseFare', fare);
+            formData.append('departureTime', date + ' ' + time); // Combined Date & Time
+            formData.append('originBranchId', originBranchId);   // Integer ID
+            formData.append('destinationBranchId', destBranchId);// Integer ID
+
+            // 5. Send POST Request
+            fetch('/Home/SaveTrip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(r => r.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('createTripForm').reset();
+                    closeModal('createTripModal');
+                    showToast(data.message, 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    alert(data.message || 'Error creating trip.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> Save Schedule';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Network error while creating trip.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Save Schedule';
+            });
+        }
+
+        // --- FETCH ROUTES DYNAMICALLY ---
+        
+
+        // --- AUTO-FILL ORIGIN WHEN ROUTE IS SELECTED ---
+        function autoFillOrigin() {
+            var destSelect = document.getElementById('newTripDest');
+            var originInput = document.getElementById('newTripOrigin');
+
+            if (destSelect.selectedIndex > 0) {
+                var opt = destSelect.options[destSelect.selectedIndex];
+                var orig = opt.getAttribute('data-origin');
+                if (orig) {
+                    originInput.value = orig;
+                }
+            }
+        }
+
+        function insertTripCard(tripId, busName, busNum, origin, dest, dateRaw, timeRaw, fareNum, driverDisplay, conductorDisplay, isDispatcher) {
+            const grid = document.getElementById('tripsGrid');
+
+            // Formatting Helpers
+            const displayDate = formatDateShort(dateRaw);
+            const displayTime = formatTo12Hour(timeRaw);
+            const displayFare = fareNum.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const searchTag = `${origin} ${dest}`.toLowerCase();
+
+            const today = new Date().toISOString().split('T')[0];
+            const showButtons = (isDispatcher === true && dateRaw === today);
+
+            const cardHtml = `
+            <div class="trip-card" data-route="${searchTag}" data-status="Scheduled" style="animation: modalPopIn 0.4s ease-out forwards;">
+                <div class="trip-header">
+                    <div class="trip-title-area">
+                        <div class="bus-icon-wrap"><i class="fas fa-bus-alt"></i></div>
+                        <div>
+                            <h5>${busName}</h5>
+                            <span style="text-transform: uppercase;">${busNum}</span>
+                        </div>
+                    </div>
+                    <span class="trip-status status-Scheduled status-editable" onclick="openStatusModal('${tripId}', 'Scheduled')" id="pill-${tripId}" title="Click to update status">
+                        Scheduled
+                    </span>
+                </div>
+
+                <div class="trip-details" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="detail-row">
+                        <i class="fas fa-map-marker-alt" style="color: var(--accent);"></i>
+                        <span><strong>${origin}</strong> &rarr; <strong>${dest}</strong></span>
+                    </div>
+
+                    <div class="detail-row">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>${displayDate} — ${displayTime}</span>
+                    </div>
+
+                    <div class="detail-row" style="justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 2px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <i class="fas fa-ticket-alt" style="color: var(--green);"></i>
+                            <span>Fare: <strong>₱${displayFare}</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <i class="fas fa-users" style="color: var(--navy-800);"></i>
+                            <span>Booked: <strong>0</strong> / 45 Pax</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-row" style="justify-content: space-between; font-size: 11.5px;">
+                        <div style="display: flex; gap: 8px; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Driver">
+                            <i class="fas fa-steering-wheel" style="color: var(--text-muted);"></i>
+                            <span><strong>DRV:</strong> ${driverDisplay}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Conductor">
+                            <i class="fas fa-user-tag" style="color: var(--text-muted);"></i>
+                            <span><strong>CON:</strong> ${conductorDisplay}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border, #e2e8f0); margin-top: auto; padding-top: 12px;">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted, #94a3b8); letter-spacing: 0.5px;">
+                        TRIP ID: ${tripId}
+                    </div>
+
+                    ${showButtons ? `
+                    <div class="action-buttons">
+                        <button class="dispatch-btn btn-dispatch" onclick="dispatchTrip('${tripId}')" style="padding: 4px 10px; font-size: 11px; border-radius: 4px; border: none; cursor: pointer; background: #10b981; color: white; margin-left: 8px;">
+                            Dispatch
+                        </button>
+                        <button class="dispatch-btn btn-cancel" onclick="cancelTrip('${tripId}')" style="padding: 4px 10px; font-size: 11px; border-radius: 4px; border: none; cursor: pointer; background: #ef4444; color: white; margin-left: 8px;">
+                            Cancel
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            `;
+
+            grid.insertAdjacentHTML('afterbegin', cardHtml);
+        }
+
+        // --- DISPATCHER ONLY: UPDATE STATUS ---
+        function openStatusModal(tripId, currentStatus) {
+            document.getElementById('editTripId').value = tripId;
+            document.getElementById('oldTripStatus').value = currentStatus;
+            document.getElementById('editTripStatus').value = currentStatus;
+            openModal('updateStatusModal');
+        }
+
+                function submitStatusUpdate() {
+            var tripId = document.getElementById('editTripId').value;
+            var oldStatus = document.getElementById('oldTripStatus').value;
+            var newStatus = document.getElementById('editTripStatus').value;
+
+            if (oldStatus === newStatus) {
+                closeModal('updateStatusModal');
+                return;
+            }
+
+            // ✅ FIX: Changed to x-www-form-urlencoded to perfectly match your C# Controller!
+            fetch('/Home/UpdateTripStatus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `tripId=${encodeURIComponent(tripId)}&newStatus=${encodeURIComponent(newStatus)}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal('updateStatusModal');
+                    // ... (keep the rest of your success logic exactly as is)
+
+                    // Adjust stats
+                    if (oldStatus === 'Scheduled') updateStatCounter('stat-scheduled', -1);
+                    if (oldStatus === 'In Transit') updateStatCounter('stat-intransit', -1);
+                    if (oldStatus === 'Completed') updateStatCounter('stat-completed', -1);
+
+                    if (newStatus === 'Scheduled') updateStatCounter('stat-scheduled', 1);
+                    if (newStatus === 'In Transit') updateStatCounter('stat-intransit', 1);
+                    if (newStatus === 'Completed') updateStatCounter('stat-completed', 1);
+
+                    // Update UI pill
+                    var pill = document.getElementById(`pill-${tripId}`);
+                    var card = pill.closest('.trip-card');
+
+                    if (pill && card) {
+                        pill.className = `trip-status status-${newStatus.replace(' ', '-')} status-editable`;
+                        pill.textContent = newStatus;
+                        card.setAttribute('data-status', newStatus);
+
+                        // Update the onclick param to hold the new status
+                        pill.setAttribute('onclick', `openStatusModal('${tripId}', '${newStatus}')`);
+
+                        // Small bounce effect on update
+                        pill.animate([
+                            { transform: 'scale(1)' },
+                            { transform: 'scale(1.15)' },
+                            { transform: 'scale(1)' }
+                        ], { duration: 300, easing: 'ease-in-out' });
+                    }
+
+                    // Global ping
+                    if (typeof window.triggerDashboardTripUpdate === 'function') {
+                        window.triggerDashboardTripUpdate();
+                    }
+
+                } else {
+                    alert(data.message || 'Failed to update status.');
+                }
+            })
+            .catch(err => alert('Network error.'));
+        }
+    </script>
+}

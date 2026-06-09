@@ -1,0 +1,1391 @@
+﻿@{
+    ViewData["Title"] = "System Archives";
+}
+
+<style>
+    /* =========================================
+           PAGE LOAD ANIMATIONS
+           ========================================= */
+    @@keyframes fadeSlideUp {
+        0% {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-item {
+        opacity: 0;
+        animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .delay-1 {
+        animation-delay: 0.05s;
+    }
+
+    .delay-2 {
+        animation-delay: 0.15s;
+    }
+
+    .delay-3 {
+        animation-delay: 0.25s;
+    }
+
+    /* =========================================
+           PAGE HEADER & TABS
+           ========================================= */
+    .page-title i {
+        color: var(--text-muted);
+        margin-right: 10px;
+    }
+
+    .sys-tabs-nav {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 24px;
+    }
+
+    .sys-tab-btn {
+        background: none;
+        border: none;
+        padding: 12px 24px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+        font-family: var(--font);
+    }
+
+        .sys-tab-btn i {
+            margin-right: 6px;
+        }
+
+        .sys-tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .sys-tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+    /* =========================================
+           TABLE & SCROLLBAR
+           ========================================= */
+    /* =========================================
+               TABLE & SCROLLBAR
+               ========================================= */
+    /* =========================================
+           TABLE WRAPPER - UPDATED
+           ========================================= */
+    .sys-table-wrap {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        overflow-y: visible;
+        overflow-x: auto;
+    }
+
+    /* Make the sys-card on Archives NOT clip its contents */
+    .sys-card {
+        overflow: visible !important;
+    }
+
+    /* Remove any table scroll restriction */
+    #pane-buses .sys-table-wrap,
+    #pane-employees .sys-table-wrap,
+    #pane-routes .sys-table-wrap,
+    #branches-content .sys-table-wrap {
+        overflow-x: auto;
+        overflow-y: visible;
+        max-height: unset;
+        height: auto;
+    }
+
+    table.sys-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        white-space: nowrap;
+        table-layout: auto; /* Let columns size naturally */
+    }
+    /* Force all archive tables to show ALL rows — no height cap */
+    .sys-table-wrap {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        max-height: none !important;
+        height: auto !important;
+    }
+
+    /* Remove any inherited scroll containers from parent cards */
+    .sys-card {
+        overflow: visible !important;
+    }
+
+    .sys-card {
+        overflow: visible !important;
+    }
+
+
+    #pane-buses,
+    #pane-employees,
+    #pane-routes,
+    #branches-content {
+        overflow: visible !important;
+    }
+
+
+        /* Custom Scrollbar for the Table */
+        .sys-table-wrap::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .sys-table-wrap::-webkit-scrollbar-track {
+            background: #f8fafc;
+            border-radius: 4px;
+        }
+
+        .sys-table-wrap::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+            .sys-table-wrap::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+
+    .sys-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        white-space: nowrap;
+    }
+
+        /* Make the Table Header Sticky at the top! */
+        .sys-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #f8fafc; /* Matches your header color */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.06); /* Subtle shadow when scrolling */
+        }
+
+    .text-subtext {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .actions-cell {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    /* =========================================
+               STICKY ACTION COLUMN (RIGHT SIDE)
+           ========================================= */
+    .sys-table th:last-child, .sys-table td:last-child {
+        position: sticky;
+        right: 0;
+        box-shadow: -4px 0 12px rgba(0,0,0,0.04);
+        background: #ffffff;
+        text-align: center;
+        width: 120px;
+    }
+
+    .sys-table th:last-child {
+        background: #f8fafc;
+        z-index: 30; /* Must be higher than the sticky top header so the corner doesn't overlap weirdly */
+        border-bottom: 1px solid var(--border);
+    }
+
+    .sys-table tr:hover td:last-child {
+        background: #f8fafc;
+    }
+
+    /* =========================================
+           MODAL COMPONENTS
+           ========================================= */
+    /* Header */
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close-modal {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 18px;
+    }
+
+    /* Alert Box */
+    .alert-box {
+        padding: 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .alert-warning {
+        background-color: #fff7ed;
+        color: #9a3412;
+        border: 1px solid #ffedd5;
+    }
+
+    .alert-danger {
+        background-color: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    /* Detail Rows */
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px dotted #cbd5e1;
+        font-size: 14px;
+    }
+
+    .detail-label {
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .detail-val {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    /* Footer */
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn-ghost-sys {
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        padding: 8px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-primary-sys {
+        padding: 8px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: white;
+        border: none;
+        cursor: pointer;
+        background: #1e293b;
+    }
+
+    .btn-danger-sys {
+        padding: 8px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: white;
+        border: none;
+        cursor: pointer;
+        background: #ea580c;
+    }
+    /* Matches Deactivate orange */
+
+    /* =========================================
+           FADE ANIMATIONS
+           ========================================= */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 28, 63, 0.6);
+        backdrop-filter: blur(3px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+        .modal-overlay.show {
+            display: flex !important;
+        }
+
+    .sys-modal {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 420px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        padding: 24px;
+        position: relative;
+    }
+
+    @@keyframes overlayFadeOut {
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+        }
+    }
+    @@keyframes modalFadeOut {
+        from {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        to {
+            opacity: 0;
+            transform: scale(0.97) translateY(8px);
+        }
+    }
+
+    .row-removing td {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        opacity: 0;
+        line-height: 0;
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+        .row-removing td * {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+    /* Ensure overlay is hidden by default and fixed to screen */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 28, 63, 0.5);
+        backdrop-filter: blur(2px);
+        display: none; /* Hides it */
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+        .modal-overlay.show {
+            display: flex !important; /* Shows it only when 'show' class is added */
+        }
+
+    /* =========================================
+       TABS & FILTER TOOLBAR
+       ========================================= */
+    .tab-pane {
+        display: none;
+        animation: fadeSlideUp 0.3s forwards;
+    }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+    .filter-toolbar-card {
+        background: #fff;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .search-input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+        .search-input-wrap i {
+            position: absolute;
+            left: 14px;
+            color: #94a3b8;
+        }
+
+    .search-input {
+        width: 100%;
+        padding: 10px 14px 10px 40px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+        .search-input:focus {
+            border-color: #3b82f6;
+        }
+
+    .filter-select {
+        padding: 10px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        outline: none;
+        cursor: pointer;
+        background: #fff;
+    }
+
+    /* =========================================
+       PAGE HEADER & TABS
+       ========================================= */
+    .page-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .page-title i {
+            color: #3b82f6; /* Matches the vibrant blue accent of your other pages */
+            margin-right: 0;
+        }
+
+    /* =========================================
+       EMPTY STATE STYLING
+       ========================================= */
+    .empty-state-cell {
+        text-align: center;
+        padding: 60px 20px !important;
+        background-color: #f8fafc; /* Very light gray/blue background */
+        border-bottom: none !important;
+    }
+
+    .empty-state-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-icon-wrap {
+        width: 64px;
+        height: 64px;
+        background: #f1f5f9;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+
+        .empty-icon-wrap i {
+            font-size: 28px;
+            color: #94a3b8; /* Muted slate icon */
+        }
+
+    .empty-state-content h4 {
+        margin: 0 0 6px 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #475569; /* Darker slate text */
+    }
+
+    .empty-state-content p {
+        margin: 0;
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    /* Add this to your <style> section */
+    .row-slide-out {
+        transition: all 0.5s ease-out !important;
+        opacity: 0;
+        transform: translateX(100%); /* Slides out to the right */
+        pointer-events: none;
+    }
+
+    /* =========================================
+       MODERN SLIDE-IN TOAST (TOP RIGHT)
+       ========================================= */
+    #toast-container {
+        position: fixed;
+        top: 24px; /* Positions at the top */
+        right: 24px; /* Positions at the right */
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .sys-toast {
+        background: #ffffff; /* Clean white background */
+        color: #334155; /* Dark slate text */
+        padding: 14px 20px 14px 16px;
+        border-radius: 12px; /* Smooth rounded corners */
+        border: 1px solid #e2e8f0; /* Subtle outline */
+        border-left: 6px solid transparent; /* Base for the colored edge */
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05), 0 2px 5px rgba(0,0,0,0.02);
+        font-size: 14.5px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 280px;
+        /* ANIMATION: Starts off-screen to the right (120%) */
+        opacity: 0;
+        transform: translateX(120%);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    }
+
+        /* When the 'show' class is added, it slides LEFT into its normal position (0) */
+        .sys-toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Color variations for the left border */
+        .sys-toast.success {
+            border-left-color: #10b981;
+        }
+
+        .sys-toast.error {
+            border-left-color: #ef4444;
+        }
+
+    .toast-close-btn {
+        margin-left: auto;
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+    }
+
+        .toast-close-btn:hover {
+            color: #64748b;
+        }
+</style>
+
+<div class="page-header animate-item delay-1">
+    <div class="page-header-left">
+        <h2 class="page-title"><i class="fas fa-archive"></i> System Archives</h2>
+        <p class="page-sub">Restore or permanently delete inactive system records.</p>
+    </div>
+</div>
+
+<div class="sys-tabs-nav animate-item delay-2">
+    <button class="sys-tab-btn active" onclick="switchTab('buses', this)"><i class="fas fa-bus-alt"></i> Archived Buses</button>
+    <button class="sys-tab-btn" onclick="switchTab('employees', this)"><i class="fas fa-users"></i> Archived Employees</button>
+    <button class="sys-tab-btn" onclick="switchTab('routes', this)"><i class="fas fa-route"></i> Archived Routes</button>
+    <button class="sys-tab-btn" onclick="switchTab('branches', this)"><i class="fas fa-building"></i> Archived Branches</button>
+</div>
+
+
+<div class="filter-toolbar-card animate-item delay-2">
+    <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
+        <div class="search-input-wrap" style="min-width:220px; max-width:340px; width:100%;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchArchive" class="search-input" placeholder="Search archives..." onkeyup="filterArchives()">
+        </div>
+        <button class="btn-ghost-sys" onclick="clearFilters()" style="height: 38px;">
+            <i class="fas fa-sync-alt"></i> Reset
+        </button>
+    </div>
+
+    <select id="dynamicFilter" class="filter-select" style="width:auto; min-width:140px;" onchange="filterArchives()">
+        <option value="">All Types</option>
+        <option value="AC">Aircon (AC)</option>
+        <option value="Ordinary">Ordinary</option>
+    </select>
+
+    <div style="margin-left:auto; display:flex; align-items: center; gap: 10px;">
+        <button type="button" class="btn-primary-sys" onclick="openRestoreAllModal()" style="background: #10b981; border: none; height: 38px;">
+            <i class="fas fa-undo-alt" style="margin-right: 6px;"></i> Restore All
+        </button>
+
+        <button type="button" class="btn-danger-sys" onclick="openDeleteAllModal()" style="height: 38px;">
+            <i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Delete All
+        </button>
+    </div>
+</div>
+
+<div class="sys-card animate-item delay-3" style="border-radius: 12px; overflow: hidden;">
+
+    <div id="pane-buses" class="tab-pane active">
+        <div class="sys-card-header" style="padding: 16px 22px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fff;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-bus-alt" style="color: #3b82f6; font-size: 16px;"></i>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f1c3f;">Archived Buses Log</h3>
+            </div>
+            <span id="badge-buses" style="background: #eff6ff; color: #3b82f6; padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;">
+                @(ViewBag.ArchivedBuses != null ? ViewBag.ArchivedBuses.Count : 0) buses
+            </span>
+        </div>
+
+        <div class="sys-table-wrap">
+            <table class="sys-table" id="table-buses">
+                <thead>
+                    <tr>
+                        <th>Bus ID</th>
+                        <th>Plate No.</th>
+                        <th>Body No.</th>
+                        <th>Type & Name</th>
+                        <th>Condition</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table-buses-body">
+                    @if (ViewBag.ArchivedBuses != null && ViewBag.ArchivedBuses.Count > 0)
+                    {
+                        foreach (var bus in ViewBag.ArchivedBuses)
+                        {
+                            <tr id="row-@bus.Bus_ID">
+                                <td><strong>@bus.Bus_ID</strong></td>
+                                <td>@bus.Plate_Number</td>
+                                <td>@bus.Body_Bus_Number</td>
+                                <td>
+                                    <div><strong>@(bus.Bus_Name ?? "Unnamed Bus")</strong></div>
+                                    <div class="text-subtext">@(bus.Bus_Type == "AC" ? "Aircon" : "Ordinary")</div>
+                                </td>
+                                <td>
+                                    <span class="badge-sys @(bus.Bus_Condition == "Good" ? "badge-green" : "badge-orange")">@bus.Bus_Condition</span>
+                                </td>
+                                <td style="text-align:center;">
+                                    <div class="actions-cell">
+                                        <button class="action-btn restore" onclick="openRestoreModal('@bus.Bus_ID', '@bus.Plate_Number')"><i class="fas fa-undo"></i></button>
+                                        <button class="action-btn archive" onclick="openArchiveModal('@bus.Bus_ID', '@bus.Plate_Number')"><i class="fas fa-archive"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr class="empty-state-row">
+                            <td colspan="6" class="empty-state-cell">
+                                <div class="empty-state-content">
+                                    <div class="empty-icon-wrap"><i class="fas fa-folder-open"></i></div>
+                                    <h4>No Archived Buses</h4>
+                                    <p>Buses that you archive will be stored here safely.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="pane-employees" class="tab-pane">
+        <div class="sys-card-header" style="padding: 16px 22px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fff;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-users" style="color: #10b981; font-size: 16px;"></i>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f1c3f;">Archived Employees Log</h3>
+            </div>
+            <span id="badge-employees" style="background: #ecfdf5; color: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;">
+                0 employees
+            </span>
+        </div>
+        <div class="sys-table-wrap">
+            <table class="sys-table" id="table-employees">
+                <thead>
+                    <tr>
+                        <th>Emp ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Archived Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table-employees-body">
+                    @if (ViewBag.ArchivedEmployees != null && ViewBag.ArchivedEmployees.Count > 0)
+                    {
+                        foreach (var emp in ViewBag.ArchivedEmployees)
+                        {
+                            <tr id="row-@emp.Employee_ID">
+                                <td><strong>@emp.Employee_ID</strong></td>
+                                <td>@emp.Name</td>
+                                <td>@emp.Role</td>
+                                <td>@(emp.Archived_Date?.ToString("MMM dd, yyyy") ?? "-")</td>
+                                <td style="text-align:center;">
+                                    <button class="action-btn restore" title="Restore Employee" onclick="restoreEmployee('@emp.Employee_ID')">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                    <button class="action-btn archive" title="Delete Permanently" onclick="deleteEmployeeForever('@emp.Employee_ID')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr class="empty-state-row">
+                            <td colspan="5" class="empty-state-cell">
+                                <div class="empty-state-content">
+                                    <div class="empty-icon-wrap"><i class="fas fa-folder-open"></i></div>
+                                    <h4>No Archived Employees</h4>
+                                    <p>Employees that you archive will be stored here safely.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="pane-routes" class="tab-pane">
+        <div class="sys-card-header" style="padding: 16px 22px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fff;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-route" style="color: #f59e0b; font-size: 16px;"></i>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f1c3f;">Archived Routes Log</h3>
+            </div>
+            <span id="badge-routes" style="background: #fffbeb; color: #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;">
+                0 routes
+            </span>
+        </div>
+        <div class="sys-table-wrap">
+            <table class="sys-table">
+                <thead>
+                    <tr>
+                        <th>ROUTE ID</th>
+                        <th>ORIGIN</th>
+                        <th>DESTINATION</th>
+                        <th>BASE FARE</th>
+                        <th>DISTANCE</th>
+                        <th>EST. HOURS</th>
+                        <th>ARCHIVED DATE</th>
+                        <th class="sticky-action-col" style="text-align:center;">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="archiveTableBody">
+                    @{
+                        var archivedRoutes = ViewBag.ArchivedRoutes as List<PUBReservationSystem.Models.BusRoute>;
+                    }
+
+                    @if (archivedRoutes != null && archivedRoutes.Count > 0)
+                    {
+                        @foreach (var route in archivedRoutes)
+                        {
+                            <tr id="route-row-@route.Route_ID">
+                                <td style="font-weight:700; color:var(--accent, #3b82f6);">@route.Route_ID</td>
+                                <td style="font-weight:600;">@route.Origin</td>
+                                <td style="font-weight:600;">@route.Destination</td>
+                                <td style="color:var(--green,#0fa66e); font-weight:600;">₱@route.Base_Fare.ToString("N2")</td>
+                                <td style="color:var(--text-secondary);">@(route.Distance_KM?.ToString("N2") ?? "-") KM</td>
+                                <td style="color:var(--text-secondary);">@(route.Estimated_Hours?.ToString("N2") ?? "-") hrs</td>
+
+                                <td style="color:var(--text-secondary);">
+                                    @(route.Updated_At.HasValue? route.Updated_At.Value.ToString("MMM dd, yyyy") : "-")
+                                </td>
+
+                                <td class="sticky-action-col" style="text-align:center;">
+                                    <div style="display: flex; justify-content: center; gap: 8px;">
+                                        <button class="action-btn edit" title="Restore Route" onclick="restoreRoute('@route.Route_ID')" style="background: #ecfdf5; color: #10b981;">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                        <button class="action-btn delete" title="Permanently Delete" onclick="openPermanentDeleteRouteModal('@route.Route_ID', '@route.Origin → @route.Destination')" style="background: #fff1f2; color: #dc2626; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="empty-state-cell">
+                                <div class="empty-state-content">
+                                    <div class="empty-icon-wrap">
+                                        <i class="fas fa-folder-open"></i>
+                                    </div>
+                                    <h4>No Archived Routes</h4>
+                                    <p>Routes that you archive will be stored here safely.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="branches-content" class="tab-pane">
+        <div class="sys-card-header" style="padding: 16px 22px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fff;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-building" style="color: #3b82f6; font-size: 16px;"></i>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f1c3f;">Archived Branches Log</h3>
+            </div>
+            <span id="badge-branches" style="background: #eff6ff; color: #3b82f6; padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;">
+                @(ViewBag.ArchivedBranches != null ? ViewBag.ArchivedBranches.Count : 0) branches
+            </span>
+        </div>
+
+        <div class="sys-table-wrap">
+            <table class="sys-table" id="table-branches">
+                <thead>
+                    <tr>
+                        <th>BRANCH ID</th>
+                        <th>BRANCH NAME</th>
+                        <th>LOCATION</th>
+                        <th class="sticky-action-col" style="text-align:center;">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.ArchivedBranches != null && ViewBag.ArchivedBranches.Count > 0)
+                    {
+                        foreach (var b in ViewBag.ArchivedBranches)
+                        {
+                            <tr id="branch-row-@b.Branch_ID">
+                                <td style="font-weight:700; color:var(--accent, #3b82f6);">@b.Branch_ID</td>
+                                <td style="font-weight:600;">@b.Branch_Name</td>
+                                <td style="color:var(--text-secondary);">@b.Location</td>
+                                <td class="sticky-action-col" style="text-align:center;">
+                                    <div style="display: flex; justify-content: center; gap: 8px;">
+                                        <button class="action-btn edit" title="Restore Branch" onclick="restoreBranch('@b.Branch_ID')" style="background: #ecfdf5; color: #10b981; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                        <button class="action-btn delete" title="Permanently Delete" onclick="deleteBranchForever('@b.Branch_ID', '@b.Branch_Name')" style="background: #fff1f2; color: #dc2626; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr class="empty-state-row">
+                            <td colspan="4" class="empty-state-cell">
+                                <div class="empty-state-content">
+                                    <div class="empty-icon-wrap"><i class="fas fa-folder-open"></i></div>
+                                    <h4>No Archived Branches</h4>
+                                    <p>Branches that you archive will be stored here safely.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@* ===== MODAL 1: RESTORE BUS ===== *@
+<div id="restoreModal" class="modal-overlay">
+    <div class="sys-modal" onclick="event.stopPropagation()" style="max-width:420px;">
+        <div class="modal-header">
+            <h4><i class="fas fa-undo" style="color:var(--accent);"></i> Restore Bus</h4>
+            <button class="btn-close-modal" onclick="closeModal('restoreModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="action-warning-box" style="background:var(--navy-50, #eff6ff); color:var(--navy-700, #1e3a8a); border-left:4px solid var(--accent, #3b6cf7);">
+                This will return the bus to the active Fleet Management system.
+            </div>
+            <div class="action-details-box">
+                <div class="detail-row"><span class="detail-label">Bus ID</span><span class="detail-val" id="restoreBusIdText">--</span></div>
+                <div class="detail-row"><span class="detail-label">Plate No.</span><span class="detail-val" id="restoreBusPlate">--</span></div>
+            </div>
+            <input type="hidden" id="restoreBusId">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-ghost-sys" onclick="closeModal('restoreModal')">Cancel</button>
+            <button class="btn-primary-sys" onclick="confirmRestore()">Restore</button>
+        </div>
+    </div>
+</div>
+
+@* ===== MODAL: PERMANENT DELETE ROUTE ===== *@
+<div id="deleteRoutePermanentModal" class="modal-overlay">
+    <div class="sys-modal">
+        <div class="modal-header-sys">
+            <h4 class="modal-title-sys" style="color: #b91c1c;"><i class="fas fa-exclamation-triangle"></i> Permanently Delete</h4>
+            <div class="modal-close-sys" onclick="closeModal('deleteRoutePermanentModal')"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="modal-body-sys">
+            <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.95rem;">
+                This action cannot be undone. Are you sure you want to permanently delete this route?
+            </p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px;">
+                <small style="color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Route to Destroy</small>
+                <strong id="deleteRouteNameText" style="color: #1e293b; display:block; font-size: 1.1rem;">--</strong>
+            </div>
+            <input type="hidden" id="deleteRouteIdInput">
+        </div>
+        <div class="modal-footer-sys" style="margin-top: 20px;">
+            <button class="btn-ghost-sys" onclick="closeModal('deleteRoutePermanentModal')">Cancel</button>
+            <button class="btn-danger-sys" onclick="confirmPermanentDeleteRoute()">Delete Forever</button>
+        </div>
+    </div>
+</div>
+
+
+
+@* ===== MODAL 4: DELETE ALL (WIPE) ===== *@
+<div id="deleteAllModal" class="modal-overlay">
+    <div class="sys-modal">
+        <div class="modal-header-sys">
+            <h4 class="modal-title-sys" style="color: #dc2626;">
+                <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i> Empty Archive
+            </h4>
+            <div class="modal-close-sys" onclick="closeModal('deleteAllModal')">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+        <div class="modal-body-sys">
+            <p style="color: #475569; margin-bottom: 1.25rem; font-size: 0.95rem; line-height: 1.5;">
+                You are about to permanently delete <strong>all</strong> archived records in this section.
+            </p>
+            <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 12px 16px; border-radius: 8px; display: flex; gap: 12px; align-items: flex-start;">
+                <i class="fas fa-info-circle" style="color: #ef4444; margin-top: 3px;"></i>
+                <p style="margin: 0; font-size: 0.85rem; color: #991b1b; line-height: 1.4;">
+                    This action is irreversible. The selected data will be completely wiped from the database and cannot be recovered.
+                </p>
+            </div>
+        </div>
+        <div class="modal-footer-sys" style="margin-top: 24px;">
+            <button class="btn-ghost-sys" onclick="closeModal('deleteAllModal')">Cancel</button>
+            <button class="btn-danger-sys" onclick="confirmDeleteAll()">Yes, Empty Archive</button>
+        </div>
+    </div>
+</div>
+
+@* ===== MODAL: RESTORE ALL ===== *@
+<div id="restoreAllModal" class="modal-overlay">
+    <div class="sys-modal">
+        <div class="modal-header-sys">
+            <h4 class="modal-title-sys" style="color: #10b981;">
+                <i class="fas fa-undo-alt" style="margin-right: 8px;"></i> Restore Archive
+            </h4>
+            <div class="modal-close-sys" onclick="closeModal('restoreAllModal')">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+        <div class="modal-body-sys">
+            <p style="color: #475569; margin-bottom: 1.25rem; font-size: 0.95rem; line-height: 1.5;">
+                You are about to restore <strong>all</strong> archived records in this section.
+            </p>
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px 16px; border-radius: 8px; display: flex; gap: 12px; align-items: flex-start;">
+                <i class="fas fa-info-circle" style="color: #059669; margin-top: 3px;"></i>
+                <p style="margin: 0; font-size: 0.85rem; color: #065f46; line-height: 1.4;">
+                    These records will be moved back to the active system and will appear in their respective management pages.
+                </p>
+            </div>
+        </div>
+        <div class="modal-footer-sys" style="margin-top: 24px;">
+            <button class="btn-ghost-sys" onclick="closeModal('restoreAllModal')">Cancel</button>
+            <button class="btn-primary-sys" style="background: #10b981;" onclick="confirmRestoreAll()">Yes, Restore All</button>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        // ==========================================
+        // 1. STATE MANAGEMENT & TAB SWITCHING
+        // ==========================================
+        let currentTab = 'buses';
+
+        function switchTab(tabId, btnElement) {
+            // Update Button styling
+            document.querySelectorAll('.sys-tab-btn, .audit-tab').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Hide all tab panes
+            document.querySelectorAll('.tab-pane, .tab-content').forEach(pane => {
+                pane.classList.remove('active');
+                pane.style.display = 'none';
+            });
+
+            // Show the target pane (Branches uses a different ID convention)
+            const targetPaneId = tabId === 'branches' ? 'branches-content' : 'pane-' + tabId;
+            const targetPane = document.getElementById(targetPaneId);
+            if (targetPane) {
+                targetPane.classList.add('active');
+                targetPane.style.display = 'block';
+            }
+
+            currentTab = tabId;
+
+            // Dynamically update the filter options
+            const searchInput = document.getElementById('searchArchive');
+            const dynamicFilter = document.getElementById('dynamicFilter');
+
+            dynamicFilter.innerHTML = '<option value="">All Status / Types</option>';
+            dynamicFilter.style.display = "block";
+
+            if (tabId === 'buses') {
+                searchInput.placeholder = "Search bus ID, plate, or name...";
+                dynamicFilter.innerHTML += `
+                    <option value="ac">Aircon (AC)</option>
+                    <option value="ordinary">Ordinary</option>
+                `;
+            } else if (tabId === 'employees') {
+                searchInput.placeholder = "Search employee ID or name...";
+                dynamicFilter.innerHTML += `
+                    <option value="driver">Driver</option>
+                    <option value="conductor">Conductor</option>
+                `;
+            } else if (tabId === 'routes') {
+                searchInput.placeholder = "Search origin or destination...";
+                dynamicFilter.style.display = "none";
+            } else if (tabId === 'branches') {
+                searchInput.placeholder = "Search branch name or location...";
+                dynamicFilter.style.display = "none";
+            }
+
+            clearFilters();
+        }
+
+        // ==========================================
+        // 2. FILTERING & STATS ENGINE
+        // ==========================================
+        function updateArchiveStats() {
+            const countRows = (tab) => document.querySelectorAll(`#pane-${tab} tbody tr:not(.empty-state-row):not([style*="display: none"]), #branches-content tbody tr:not(.empty-state-row):not([style*="display: none"])`).length;
+
+            let bCount = document.querySelectorAll(`#pane-buses tbody tr:not(.empty-state-row):not([style*="display: none"])`).length;
+            let eCount = document.querySelectorAll(`#pane-employees tbody tr:not(.empty-state-row):not([style*="display: none"])`).length;
+            let rCount = document.querySelectorAll(`#pane-routes tbody tr:not(.empty-state-row):not([style*="display: none"])`).length;
+            let brCount = document.querySelectorAll(`#branches-content tbody tr:not(.empty-state-row):not([style*="display: none"])`).length;
+
+            if (document.getElementById('badge-buses')) document.getElementById('badge-buses').textContent = bCount + (bCount === 1 ? ' bus' : ' buses');
+            if (document.getElementById('badge-employees')) document.getElementById('badge-employees').textContent = eCount + (eCount === 1 ? ' employee' : ' employees');
+            if (document.getElementById('badge-routes')) document.getElementById('badge-routes').textContent = rCount + (rCount === 1 ? ' route' : ' routes');
+            if (document.getElementById('badge-branches')) document.getElementById('badge-branches').textContent = brCount + (brCount === 1 ? ' branch' : ' branches');
+        }
+
+        function filterArchives() {
+            let searchText = document.getElementById('searchArchive').value.toLowerCase().trim();
+            let filterVal = document.getElementById('dynamicFilter').value.toLowerCase();
+
+            let activePaneId = currentTab === 'branches' ? 'branches-content' : 'pane-' + currentTab;
+            let rows = document.querySelectorAll(`#${activePaneId} tbody tr:not(.empty-state-row)`);
+
+            rows.forEach(row => {
+                let rowText = row.textContent.toLowerCase();
+                let matchesSearch = rowText.includes(searchText);
+                let matchesDropdown = filterVal === "" || rowText.includes(filterVal);
+
+                row.style.display = (matchesSearch && matchesDropdown) ? '' : 'none';
+            });
+            updateArchiveStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('searchArchive').value = '';
+            document.getElementById('dynamicFilter').value = '';
+            filterArchives();
+        }
+
+        // ==========================================
+        // 3. TOAST NOTIFICATIONS
+        // ==========================================
+        if (!document.getElementById('toast-container')) {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            document.body.appendChild(container);
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            toast.className = `sys-toast ${type}`;
+            const icon = type === 'success'
+                ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i>'
+                : '<i class="fas fa-exclamation-circle" style="color: #ef4444; font-size: 20px;"></i>';
+
+            toast.innerHTML = `
+                <div style="display:flex; align-items:center; justify-content:center;">${icon}</div>
+                <span>${message}</span>
+                <button class="toast-close-btn" onclick="closeToast(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => { toast.classList.add('show'); }, 10);
+            setTimeout(() => {
+                if (toast.classList.contains('show')) {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 400);
+                }
+            }, 3500);
+        }
+
+        function closeToast(btnElement) {
+            const toast = btnElement.closest('.sys-toast');
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }
+
+        // ==========================================
+        // 4. MODALS & DOM MANIPULATION
+        // ==========================================
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.add('fade-out');
+            setTimeout(() => { el.classList.remove('show', 'fade-out'); }, 250);
+        }
+
+        function removeRowDynamically(id) {
+            const row = document.getElementById('row-' + id) || document.getElementById('route-row-' + id) || document.getElementById('branch-row-' + id);
+
+            if (row) {
+                row.classList.add('row-removing');
+                setTimeout(() => {
+                    const tbody = row.closest('tbody');
+                    row.remove();
+                    updateArchiveStats();
+
+                    if (tbody.querySelectorAll('tr:not(.empty-state-row)').length === 0) {
+                        tbody.innerHTML = `
+                            <tr class="empty-state-row">
+                                <td colspan="8" class="empty-state-cell">
+                                    <div class="empty-state-content">
+                                        <div class="empty-icon-wrap"><i class="fas fa-folder-open"></i></div>
+                                        <h4>Archive Empty</h4>
+                                        <p>No records remain in this section.</p>
+                                    </div>
+                                </td>
+                            </tr>`;
+                    }
+                }, 350);
+            }
+        }
+
+        // ==========================================
+        // 5. AJAX / FETCH ACTIONS
+        // ==========================================
+
+        // --- BUSES ---
+        function openRestoreModal(id, plate) {
+            document.getElementById('restoreBusId').value = id;
+            document.getElementById('restoreBusIdText').textContent = id;
+            document.getElementById('restoreBusPlate').textContent = plate.toUpperCase();
+            openModal('restoreModal');
+        }
+
+        function confirmRestore() {
+            const id = document.getElementById('restoreBusId').value;
+            fetch('/Home/RestoreBus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'busId=' + encodeURIComponent(id)
+            })
+            .then(r => r.json()).then(data => {
+                closeModal('restoreModal');
+                if (data.success) { showToast(data.message, 'success'); removeRowDynamically(id); }
+                else showToast(data.message, 'error');
+            }).catch(() => showToast('Network error while restoring.', 'error'));
+        }
+
+        // --- ROUTES ---
+        function restoreRoute(id) {
+            if(!confirm("Restore this route to active operations?")) return;
+
+            fetch('/Home/RestoreRoute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'routeId=' + encodeURIComponent(id)
+            })
+            .then(r => r.json()).then(data => {
+                if (data.success) { showToast(data.message, 'success'); removeRowDynamically(id); }
+                else showToast(data.message, 'error');
+            }).catch(() => showToast('Network error while restoring.', 'error'));
+        }
+
+        function openPermanentDeleteRouteModal(id, name) {
+            const idInput = document.getElementById('deleteRouteIdInput');
+            const nameText = document.getElementById('deleteRouteNameText');
+
+            if (!idInput) { console.error("Missing ID Input!"); return; }
+
+            idInput.value = id;
+            if (nameText) nameText.textContent = name;
+            openModal('deleteRoutePermanentModal');
+        }
+
+        function confirmPermanentDeleteRoute() {
+            const id = document.getElementById('deleteRouteIdInput').value;
+            fetch('/Home/DeleteRouteForever', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'routeId=' + encodeURIComponent(id)
+            })
+            .then(r => r.json()).then(data => {
+                closeModal('deleteRoutePermanentModal');
+                if (data.success) { showToast(data.message, 'success'); removeRowDynamically(id); }
+                else showToast(data.message, 'error');
+            }).catch(() => showToast('Network error while deleting.', 'error'));
+        }
+
+        function deleteBranchForever(id, name) {
+            if(!confirm(`WARNING: This cannot be undone. Are you sure you want to permanently delete ${name}?`)) return;
+
+            fetch('/Home/DeleteBranchForever', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `id=${encodeURIComponent(id)}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    removeRowDynamically(id);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(() => showToast('Network error while deleting.', 'error'));
+        }
+
+        // --- BRANCHES ---
+        function restoreBranch(id) {
+            if(!confirm(`Are you sure you want to restore this branch to the active system?`)) return;
+
+            fetch('/Home/RestoreBranch', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `id=${id}`
+            }).then(r => r.json()).then(d => {
+                if(d.success) location.reload();
+                else showToast(d.message, 'error');
+            });
+        }
+
+        // --- DELETE ALL (WIPE) ---
+        function openDeleteAllModal() {
+            openModal('deleteAllModal');
+        }
+
+        function confirmDeleteAll() {
+            fetch('/Home/WipeArchive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'targetTab=' + encodeURIComponent(currentTab)
+            })
+            .then(r => r.json())
+            .then(data => {
+                closeModal('deleteAllModal');
+                if (data.success) {
+                    showToast(data.message, 'success');
+
+                    let activePaneId = currentTab === 'branches' ? 'branches-content' : 'pane-' + currentTab;
+                    const tbody = document.querySelector(`#${activePaneId} tbody`);
+
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr class="empty-state-row">
+                                <td colspan="8" class="empty-state-cell">
+                                    <div class="empty-state-content">
+                                        <div class="empty-icon-wrap"><i class="fas fa-check-circle" style="color:#10b981;"></i></div>
+                                        <h4>Archive Wiped</h4>
+                                        <p>All archived records in this tab have been permanently destroyed.</p>
+                                    </div>
+                                </td>
+                            </tr>`;
+                    }
+                    updateArchiveStats();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(err => {
+                showToast('System error. Please try again.', 'error');
+            });
+        }
+
+        // --- RESTORE ALL (BULK RESTORE) ---
+        function openRestoreAllModal() {
+            openModal('restoreAllModal');
+        }
+
+        function confirmRestoreAll() {
+            fetch('/Home/RestoreArchive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'targetTab=' + encodeURIComponent(currentTab)
+            })
+            .then(r => r.json())
+            .then(data => {
+                closeModal('restoreAllModal');
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+
+                    // --- NO RELOAD UI UPDATE ---
+                    // 1. Find the currently active table body
+                    let activePaneId = currentTab === 'branches' ? 'branches-content' : 'pane-' + currentTab;
+                    const tbody = document.querySelector(`#${activePaneId} tbody`);
+
+                    if (tbody) {
+                        // 2. Add a quick CSS transition to fade the rows out
+                        tbody.style.transition = 'opacity 0.3s ease';
+                        tbody.style.opacity = '0';
+
+                        // 3. Wait for the fade out (300ms), then swap the HTML to the Empty State
+                        setTimeout(() => {
+                            tbody.innerHTML = `
+                                <tr class="empty-state-row">
+                                    <td colspan="8" class="empty-state-cell">
+                                        <div class="empty-state-content">
+                                            <div class="empty-icon-wrap"><i class="fas fa-box-open" style="color:#10b981;"></i></div>
+                                            <h4>Archive Empty</h4>
+                                            <p>All records have been successfully restored to the active system.</p>
+                                        </div>
+                                    </td>
+                                </tr>`;
+
+                            // 4. Fade the new empty state back in
+                            tbody.style.opacity = '1';
+
+                            // 5. Instantly update the top counters to 0
+                            updateArchiveStats();
+                        }, 300);
+                    }
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(err => {
+                showToast('System error. Please try again.', 'error');
+            });
+        }
+    </script>
+}

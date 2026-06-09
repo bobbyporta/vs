@@ -1,0 +1,1700 @@
+﻿@using System.Text.Encodings.Web
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PUB Reservation System</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/PUBReservationSystem.styles.css" asp-append-version="true" />
+
+    <style>
+        /* ===== GLOBAL RESET & TOKENS ===== */
+       :root {
+    --navy-900: #080f2a;
+    --navy-800: #0f1c3f;
+    --navy-700: #172554;
+    --navy-600: #1e3a8a;
+    --navy-500: #2563eb;
+    --navy-400: #3b82f6;
+    --navy-100: #dbeafe;
+    --navy-50:  #eff6ff;
+    --accent:       #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-soft:  #eff6ff;
+    --green:      #059669;
+    --green-soft: #d1fae5;
+    --orange:     #d97706;
+    --orange-soft:#fef3c7;
+    --red:        #dc2626;
+    --red-soft:   #fee2e2;
+    --purple:     #7c3aed;
+    --purple-soft:#ede9fe;
+    --bg:      #f1f5fb;
+    --surface: #ffffff;
+    --border:  #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text-primary:   #0f172a;
+    --text-secondary: #475569;
+    --text-muted:     #94a3b8;
+    --sidebar-w: 248px;
+    --topbar-h:  56px;
+    --radius:    12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --shadow-xs: 0 1px 2px rgba(15,23,42,0.04);
+    --shadow-sm: 0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.04);
+    --shadow-md: 0 4px 16px rgba(15,23,42,0.08), 0 1px 4px rgba(15,23,42,0.04);
+    --shadow-lg: 0 8px 32px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06);
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* ===== SCROLLBARS ===== */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+    height: 100%;
+    overflow: hidden; /* no global scrollbar */
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ===== BODY ===== */
+body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text-primary);
+    height: 100%;
+    display: flex;
+    overflow: hidden; /* no page-level scrollbar */
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ===== SIDEBAR ===== */
+.sys-sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--navy-800);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 200;
+    transition: transform 0.25s ease;
+    /* sidebar itself does NOT scroll — only .sidebar-nav does */
+}
+
+.sidebar-brand {
+    padding: 20px 18px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0; /* never compressed */
+}
+
+.brand-icon {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; color: white; flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+}
+
+.brand-text { line-height: 1.25; }
+.brand-name { font-size: 14px; font-weight: 800; color: white; letter-spacing: -0.3px; display: block; }
+.brand-sub  { font-size: 10px; font-weight: 400; color: rgba(255,255,255,0.38); display: block; margin-top: 1px; }
+
+/* SIDEBAR NAV — this is the ONLY thing that scrolls inside the sidebar */
+.sidebar-nav {
+    flex: 1;
+    padding: 12px 10px;
+    overflow-y: auto;  /* scroll only when hovered inside nav */
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-height: 0; /* allows flex shrink so footer stays visible */
+}
+
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+.nav-section-label {
+    font-size: 9.5px; font-weight: 700; letter-spacing: 1.4px;
+    text-transform: uppercase; color: rgba(255,255,255,0.22);
+    padding: 14px 10px 5px;
+}
+
+.nav-link-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.nav-link-item i {
+    width: 18px; text-align: center; font-size: 14px; flex-shrink: 0;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.nav-link-item:hover {
+    background: rgba(59,130,246,0.15);
+    color: #ffffff;
+    text-decoration: none;
+    transform: translateX(6px);
+}
+
+.nav-link-item:hover i { color: var(--accent); transform: scale(1.15); }
+
+.nav-link-item.active {
+    background: rgba(59,130,246,0.25);
+    color: white; font-weight: 600;
+    transform: translateX(0);
+}
+
+.nav-link-item.active::before {
+    content: ''; position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 3px; background: var(--accent);
+    border-radius: 0 3px 3px 0;
+}
+
+.nav-link-item.active i { color: var(--accent); }
+
+.nav-role-chip {
+    margin-left: auto; font-size: 8.5px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.35);
+    flex-shrink: 0;
+}
+
+.sidebar-footer {
+    padding: 12px 10px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex; flex-direction: column; gap: 4px;
+    flex-shrink: 0; /* always visible, never pushed off */
+}
+
+.sidebar-user {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.05); margin-bottom: 4px;
+}
+
+.user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white; flex-shrink: 0;
+}
+
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 12.5px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.user-role-label { font-size: 10px; color: rgba(255,255,255,0.35); display: block; margin-top: 1px; }
+
+.nav-link-item.logout { color: rgba(255,255,255,0.4); font-size: 12.5px; transition: all 0.3s ease; }
+.nav-link-item.logout:hover { background: rgba(220,38,38,0.12); color: #fca5a5; transform: translateX(6px); }
+.nav-link-item.logout:hover i { color: #fca5a5; transform: scale(1.15); }
+
+/* ===== MAIN SHELL ===== */
+.sys-main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden; /* main shell never scrolls */
+    width: calc(100% - var(--sidebar-w));
+    min-width: 0;
+}
+
+/* ===== TOPBAR ===== */
+.sys-topbar {
+    height: var(--topbar-h);
+    flex-shrink: 0; /* never compressed */
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    z-index: 100;
+    box-shadow: var(--shadow-xs);
+}
+
+.topbar-breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-muted);
+}
+
+.topbar-breadcrumb .crumb-active { color: var(--text-primary); font-weight: 600; }
+.topbar-breadcrumb i { font-size: 10px; }
+
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+
+.topbar-chip {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px; font-family: var(--font);
+}
+
+.topbar-chip i      { color: var(--text-muted); font-size: 12px; }
+.topbar-chip strong { color: var(--text-primary); font-weight: 600; }
+.topbar-chip span   { color: var(--text-muted); }
+
+.topbar-clock { font-size: 13px; font-weight: 700; color: var(--navy-700); letter-spacing: 0.3px; }
+
+.topbar-user-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px 5px 6px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.topbar-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: white;
+}
+
+.topbar-uname { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.topbar-urole { font-size: 10px; color: var(--text-muted); display: block; }
+
+/* ===== PAGE BODY — THE ONLY SCROLL AREA ===== */
+.sys-body {
+    flex: 1;
+    min-height: 0;      /* critical: allows flex child to shrink */
+    overflow-y: auto;   /* only this scrolls when cursor is in the content area */
+    overflow-x: hidden;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== FOOTER ===== */
+.sys-footer {
+    flex-shrink: 0;
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px; color: var(--text-muted);
+    display: flex; align-items: center; justify-content: space-between;
+}
+
+.sys-footer a { color: var(--navy-600); text-decoration: none; font-weight: 500; }
+.sys-footer a:hover { text-decoration: underline; }
+
+/* ===== GLOBAL TOAST ===== */
+.toast-container {
+    position: fixed; top: 20px; right: 20px;
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+}
+
+.toast-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500;
+    background: white; box-shadow: var(--shadow-lg);
+    border-left: 3px solid transparent;
+    min-width: 280px; max-width: 380px;
+    pointer-events: all;
+    animation: toastIn 0.3s ease forwards;
+}
+
+.toast-item.success { border-color: var(--green); color: var(--text-primary); }
+.toast-item.error   { border-color: var(--red);   color: var(--text-primary); }
+.toast-item.warning { border-color: var(--orange); color: var(--text-primary); }
+.toast-item.info    { border-color: var(--accent); color: var(--text-primary); }
+
+.toast-icon { font-size: 15px; flex-shrink: 0; }
+.toast-item.success .toast-icon { color: var(--green); }
+.toast-item.error   .toast-icon { color: var(--red); }
+.toast-item.warning .toast-icon { color: var(--orange); }
+.toast-item.info    .toast-icon { color: var(--accent); }
+
+.toast-msg   { flex: 1; line-height: 1.4; }
+.toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 0; line-height: 1; }
+.toast-close:hover { color: var(--text-primary); }
+
+@@keyframes toastIn {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== SHARED PAGE COMPONENTS ===== */
+
+.page-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px; gap: 16px;
+}
+
+.page-header-left .page-title {
+    font-size: 20px; font-weight: 800;
+    color: var(--navy-800); letter-spacing: -0.5px; margin: 0;
+}
+
+.page-header-left .page-sub {
+    font-size: 13px; color: var(--text-secondary); margin: 3px 0 0;
+}
+
+.btn-primary-sys {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--navy-800); color: white; border: none;
+    padding: 9px 18px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    font-family: var(--font); text-decoration: none;
+    box-shadow: 0 2px 8px rgba(15,28,63,0.18);
+}
+
+.btn-primary-sys:hover {
+    background: var(--navy-700);
+    box-shadow: 0 4px 14px rgba(15,28,63,0.24);
+    color: white; text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.btn-primary-sys:active { transform: translateY(0); }
+
+.btn-ghost-sys {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: white; color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; font-family: var(--font);
+}
+
+.btn-ghost-sys:hover {
+    background: var(--bg); border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.btn-danger-sys {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--red-soft); color: var(--red);
+    border: 1px solid #fecaca;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; font-family: var(--font);
+}
+
+.btn-danger-sys:hover { background: var(--red); color: white; border-color: var(--red); }
+
+.sys-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+
+.sys-card-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+
+.sys-card-title {
+    font-size: 14px; font-weight: 700; color: var(--navy-800);
+    display: flex; align-items: center; gap: 8px; margin: 0;
+}
+
+.sys-card-title i { color: var(--accent); font-size: 14px; }
+
+.sys-table-wrap { overflow-x: auto; }
+.sys-table-wrap::-webkit-scrollbar { height: 4px; }
+
+table.sys-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+
+table.sys-table thead th {
+    background: #f8fafc; color: var(--text-muted);
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    padding: 11px 16px; border-bottom: 1px solid var(--border);
+    text-align: left; position: sticky; top: 0; z-index: 2;
+}
+
+table.sys-table tbody td {
+    padding: 12px 16px; border-bottom: 1px solid #f1f5f9;
+    color: var(--text-primary); vertical-align: middle;
+}
+
+table.sys-table tbody tr:last-child td { border-bottom: none; }
+table.sys-table tbody tr:hover td { background: #f8fafc; }
+
+.badge-sys {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+
+.badge-green  { background: var(--green-soft);  color: var(--green); }
+.badge-red    { background: var(--red-soft);    color: var(--red); }
+.badge-orange { background: var(--orange-soft); color: var(--orange); }
+.badge-blue   { background: var(--accent-soft); color: var(--accent); }
+.badge-purple { background: var(--purple-soft); color: var(--purple); }
+.badge-gray   { background: #f1f5f9; color: var(--text-secondary); }
+
+.filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.search-input-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; }
+
+.search-input-wrap i {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 13px; pointer-events: none;
+}
+
+.search-input {
+    width: 100%; padding: 8px 12px 8px 34px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; background: white; color: var(--text-primary);
+    font-family: var(--font); transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.filter-select {
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 13px;
+    background: white; color: var(--text-primary);
+    font-family: var(--font); cursor: pointer;
+}
+
+.filter-select:focus { outline: none; border-color: var(--accent); }
+
+.sys-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(8,15,42,0.55); backdrop-filter: blur(4px);
+    z-index: 1000; display: none;
+    align-items: center; justify-content: center; padding: 20px;
+}
+
+.sys-modal-overlay.active { display: flex; }
+
+.sys-modal {
+    background: white; border-radius: var(--radius-lg);
+    width: 100%; max-width: 520px; max-height: 90vh;
+    overflow-y: auto; box-shadow: var(--shadow-lg);
+    animation: modalIn 0.22s ease forwards;
+}
+
+.sys-modal.modal-lg { max-width: 700px; }
+.sys-modal.modal-sm { max-width: 380px; }
+
+@@keyframes modalIn {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header-sys {
+    padding: 18px 22px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+}
+
+.modal-title-sys {
+    font-size: 15px; font-weight: 700; color: var(--navy-800);
+    display: flex; align-items: center; gap: 9px; margin: 0;
+}
+
+.modal-title-sys i { color: var(--accent); }
+
+.modal-close-sys {
+    width: 30px; height: 30px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); font-size: 13px;
+    transition: all 0.15s;
+}
+
+.modal-close-sys:hover { background: var(--red-soft); color: var(--red); border-color: #fecaca; }
+
+.modal-body-sys { padding: 22px; }
+
+.modal-footer-sys {
+    padding: 16px 22px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+}
+
+.form-group-sys { margin-bottom: 16px; }
+
+.form-label-sys {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--text-secondary); margin-bottom: 5px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.form-control-sys {
+    width: 100%; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--font);
+    color: var(--text-primary); background: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control-sys:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.form-control-sys::placeholder { color: var(--text-muted); }
+
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+.action-btn {
+    width: 30px; height: 30px; border-radius: 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; cursor: pointer; border: 1px solid transparent;
+    transition: all 0.15s; background: none;
+}
+
+.action-btn.edit   { color: var(--accent); background: var(--accent-soft); border-color: #bfdbfe; }
+.action-btn.delete { color: var(--red);    background: var(--red-soft);    border-color: #fecaca; }
+.action-btn.view   { color: var(--purple); background: var(--purple-soft); border-color: #ddd6fe; }
+.action-btn.check  { color: var(--green);  background: var(--green-soft);  border-color: #a7f3d0; }
+.action-btn:hover  { filter: brightness(0.92); transform: scale(1.06); }
+
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+.empty-state i { font-size: 36px; margin-bottom: 12px; display: block; opacity: 0.4; }
+.empty-state p { font-size: 13px; margin: 0; }
+
+.sys-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+        .sidebar-user-btn {
+            background: transparent;
+            border: none;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            text-align: left;
+            color: inherit; /* Keeps text color consistent with sidebar */
+        }
+
+            .sidebar-user-btn:hover {
+                background: rgba(255, 255, 255, 0.05); /* Subtle highlight on hover */
+            }
+
+            /* Ensure the user info inside stays aligned */
+            .sidebar-user-btn .user-info {
+                display: flex;
+                flex-direction: column;
+            }
+
+
+        /* Make modal wider */
+        .sys-modal {
+            max-width: 800px;
+        }
+
+        /* Modal Split Layout */
+        .modal-body-split {
+            display: flex;
+            min-height: 300px;
+            padding: 0 !important; /* Reset default padding */
+        }
+
+        /* Sidebar Navigation */
+        .modal-sidebar {
+            width: 220px;
+            background: #f8fafc;
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .modal-nav-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 12px;
+            text-align: left;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .modal-nav-btn:hover {
+                background: #e2e8f0;
+            }
+
+            .modal-nav-btn.active {
+                background: var(--navy-800);
+                color: white;
+            }
+
+        /* Main Content Area */
+        .modal-main {
+            flex: 1;
+            padding: 24px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+            .tab-content.active {
+                display: block;
+            }
+
+        .password-wrap {
+            position: relative;
+        }
+
+        .toggle-pass {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        /* ===================== TOPBAR COMPONENT DESIGN ===================== */
+        .sys-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(15, 28, 63, 0.01);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Polished Glassmorphism Base Chips */
+        .topbar-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: #f8fafd;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f1c3f;
+            transition: all 0.2s ease;
+        }
+
+            .topbar-chip:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+            }
+
+        /* High-End Split User Profile Card */
+        .topbar-user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 14px 5px 5px;
+            background: #f8fafd;
+            border: 1px solid #e2e8f0;
+            border-radius: 30px;
+            transition: all 0.25s ease;
+            cursor: default;
+        }
+
+            .topbar-user-chip:hover {
+                background: #f0f4ff;
+                border-color: rgba(59, 108, 247, 0.2);
+            }
+
+        .topbar-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3b6cf7;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13.5px;
+            box-shadow: 0 2px 6px rgba(59, 108, 247, 0.25);
+        }
+
+        .topbar-user-meta {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.25;
+        }
+
+        .topbar-uname {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #0f1c3f;
+        }
+
+        .topbar-urole {
+            font-size: 10.5px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+
+        /* =================================================================
+           PREMIUM MODERN TOPBAR ARCHITECTURE
+           ================================================================= */
+        :root {
+            --tb-bg: #ffffff;
+            --tb-border: #f1f5f9;
+            --tb-text-primary: #0f172a;
+            --tb-text-secondary: #475569;
+            --tb-text-muted: #94a3b8;
+            --tb-accent: #3b82f6;
+            --tb-accent-soft: #eff6ff;
+            --tb-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+            --tb-shadow-hover: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+        }
+
+        .sys-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px;
+            background: var(--tb-bg);
+            border-bottom: 1px solid var(--tb-border);
+            height: 72px;
+            box-shadow: var(--tb-shadow);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            position: relative;
+            z-index: 100;
+        }
+
+        /* --- Breadcrumbs --- */
+        .topbar-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--tb-text-secondary);
+        }
+
+            .topbar-breadcrumb i {
+                font-size: 11px;
+                color: var(--tb-text-muted);
+            }
+
+        .crumb-active {
+            color: var(--tb-text-primary);
+            font-weight: 700;
+            letter-spacing: -0.2px;
+        }
+
+        /* --- Right Side Control Hub --- */
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* Premium Component Chips */
+        .topbar-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 16px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--tb-text-primary);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+        }
+
+            .topbar-chip:hover {
+                background: #fafafa;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+                box-shadow: var(--tb-shadow-hover);
+            }
+
+            .topbar-chip i {
+                font-size: 14px;
+                transition: transform 0.2s ease;
+            }
+
+            .topbar-chip:hover i {
+                transform: scale(1.08);
+            }
+
+        /* Weather UI Optimization */
+        #sysWeatherWidget {
+            border-left: 3px solid #f59e0b; /* Left border indicator */
+        }
+
+        #sysWeatherCity {
+            color: var(--tb-text-secondary);
+            font-weight: 500;
+        }
+
+        #sysWeatherTemp {
+            color: var(--tb-text-primary);
+            font-weight: 700;
+            background: #fdf2e9;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        /* Clock UI Optimization */
+        .topbar-clock {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: #1e40af;
+            background: var(--tb-accent-soft);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 12.5px;
+        }
+
+        /* --- Executive User Profile Card --- */
+        .topbar-user-chip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 16px 6px 6px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+            .topbar-user-chip:hover {
+                border-color: #cbd5e1;
+                background: #f8fafc;
+                transform: translateY(-1px);
+                box-shadow: var(--tb-shadow-hover);
+            }
+
+        .topbar-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 2px 4px 0 rgba(59, 130, 246, 0.3);
+            text-transform: uppercase;
+        }
+
+        .topbar-user-meta {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .topbar-uname {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--tb-text-primary);
+            line-height: 1.3;
+            text-transform: capitalize;
+        }
+
+        .topbar-urole {
+            font-size: 11px;
+            color: var(--tb-text-muted);
+            font-weight: 600;
+            line-height: 1.2;
+            margin-top: 1px;
+        }
+
+
+
+        .topbar-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 16px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--tb-text-primary);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+            /* ✅ ADJUSTMENT: Ensures changes to border-left colors transition seamlessly */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+
+        /* 1. Firefox support fallback style */
+        .sidebar, .main-sidebar, aside, [class*="sidebar"] {
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(255, 255, 255, 0.15) transparent !important;
+        }
+
+            /* 2. WebKit Canvas Engine (Chrome, Safari, Edge, Brave) */
+            .sidebar::-webkit-scrollbar,
+            .main-sidebar::-webkit-scrollbar,
+            aside::-webkit-scrollbar,
+            [class*="sidebar"]::-webkit-scrollbar {
+                width: 5px !important; /* Slims down the horizontal thickness */
+                height: 5px !important;
+            }
+
+            /* 3. The Track: Made transparent to adopt the background color beneath it */
+            .sidebar::-webkit-scrollbar-track,
+            .main-sidebar::-webkit-scrollbar-track,
+            aside::-webkit-scrollbar-track,
+            [class*="sidebar"]::-webkit-scrollbar-track {
+                background: transparent !important;
+            }
+
+            /* 4. The Thumb: Subtle low-profile overlay pill shape */
+            .sidebar::-webkit-scrollbar-thumb,
+            .main-sidebar::-webkit-scrollbar-thumb,
+            aside::-webkit-scrollbar-thumb,
+            [class*="sidebar"]::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.12) !important; /* Soft white hue that floats neatly on dark tones */
+                border-radius: 20px !important;
+            }
+
+                /* 5. Interactive highlight when teller hovers mouse over track area */
+                .sidebar::-webkit-scrollbar-thumb:hover,
+                .main-sidebar::-webkit-scrollbar-thumb:hover,
+                aside::-webkit-scrollbar-thumb:hover,
+                [class*="sidebar"]::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.25) !important; /* Brightens slightly for clean accessibility feedback */
+                }
+
+    </style>
+</head>
+
+<body data-logged-in="@(Context.Session.GetString("User_ID") != null ? "true" : "false")"
+      data-user-id="@Context.Session.GetString("User_ID")">
+
+    @{
+        var username = Context.Session.GetString("Username") ?? "User";
+        var avatarLetter = username.Length > 0 ? username.Substring(0, 1).ToUpper() : "U";
+
+        // --- CHANGE THIS SECTION ---
+        // Change from ViewBag to Session directly
+        var role = Context.Session.GetString("Role") ?? "";
+
+        bool isAdmin = role == "Admin";
+        bool isHeadTeller = role == "HeadTeller";
+        bool isTeller = role == "Teller";
+        bool isDispatcher = role == "Dispatcher";
+    }
+
+    <!-- SIDEBAR -->
+    <aside class="sys-sidebar">
+
+        <div class="sidebar-brand">
+            <div class="brand-icon"><i class="fas fa-bus"></i></div>
+            <div class="brand-text">
+                <span class="brand-name">PUB</span>
+                <span class="brand-sub">Reservation & Trips System</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <span class="nav-section-label">Main</span>
+
+            <a href="/Home" class="nav-link-item @(Context.Request.Path.Value == "/Home" || Context.Request.Path.Value == "/" ? "active" : "")">
+                <i class="fas fa-th-large"></i> Dashboard
+            </a>
+
+            @if (isAdmin || isHeadTeller || isTeller)
+            {
+                <a href="/Home/Reservations" class="nav-link-item @(Context.Request.Path.Value.Contains("Reservations") ? "active" : "")">
+                    <i class="fas fa-ticket-alt"></i> Reservations
+                </a>
+            }
+
+            <a href="/Home/Trips" class="nav-link-item @(Context.Request.Path.Value.Contains("Trips") ? "active" : "")">
+                <i class="fas fa-route"></i> Trips & Schedules
+            </a>
+
+            <span class="nav-section-label">Fleet</span>
+            <a href="/Home/Buses" class="nav-link-item @(Context.Request.Path.Value.Contains("Buses") ? "active" : "")">
+                <i class="fas fa-bus-alt"></i> Buses
+            </a>
+
+            @if (isAdmin)
+            {
+                <a href="/Home/RouteManagement" class="nav-link-item @(Context.Request.Path.Value.Contains("RouteManagement") ? "active" : "")">
+                    <i class="fas fa-map-marked-alt"></i> Routes
+                </a>
+                <a href="/Home/Branches" class="nav-link-item @(Context.Request.Path.Value.Contains("Branches") ? "active" : "")">
+                    <i class="fas fa-code-branch"></i> Branches
+                </a>
+            }
+
+            @if (isAdmin || isHeadTeller)
+            {
+                <span class="nav-section-label">Administration</span>
+                <a href="/Home/Employees" class="nav-link-item @(Context.Request.Path.Value.Contains("Employees") ? "active" : "")">
+                    <i class="fas fa-users"></i> Employees
+                </a>
+            }
+
+            @if (isAdmin)
+            {
+                <a href="/Home/UserManagement" class="nav-link-item @(Context.Request.Path.Value.Contains("UserManagement") ? "active" : "")">
+                    <i class="fas fa-user-cog"></i> User Management
+                </a>
+                <a href="/Home/Archives" class="nav-link-item @(Context.Request.Path.Value.Contains("Archives") ? "active" : "")">
+                    <i class="fas fa-archive"></i> System Archives
+                </a>
+                <a href="/Home/AuditLogs" class="nav-link-item @(Context.Request.Path.Value.Contains("AuditLogs") ? "active" : "")">
+                    <i class="fas fa-history"></i> Audit Logs
+                </a>
+            }
+        </nav>
+
+        <div class="sidebar-footer">
+            <button type="button" class="sidebar-user-btn" onclick="openModalSafe('profileModal')">
+                <div class="user-avatar">@avatarLetter</div>
+                <div class="user-info">
+                    <span class="user-name">@username</span>
+                    <span class="user-role-label">@role</span>
+                </div>
+                <i class="fas fa-cog" style="margin-left: auto; font-size: 12px; opacity: 0.5;"></i>
+            </button>
+
+            <a href="/Account/Logout" class="nav-link-item logout">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- MAIN SHELL -->
+    <div class="sys-main">
+
+
+
+        <!--Top Bar-->
+
+        @using Microsoft.AspNetCore.Http
+        @{
+            // Retrieve the active login branch configuration context dynamically
+            var rawBranchName = Context.Session.GetString("Branch_Name") ?? ViewBag.BranchName as string ?? "Manila Branch";
+
+            // Sanitize string (e.g., "Baguio Branch" -> "Baguio") so it maps seamlessly to weather API locations
+            var weatherCityQuery = rawBranchName.Replace("Branch", "", StringComparison.OrdinalIgnoreCase).Trim();
+        }
+
+        <header class="sys-topbar">
+            <div class="topbar-breadcrumb">
+                <span>PUB System</span>
+                <i class="fas fa-chevron-right"></i>
+                <span class="crumb-active">@(ViewData["Title"] ?? "Dashboard")</span>
+            </div>
+
+            <div class="topbar-right">
+                <div class="topbar-chip" id="sysWeatherWidget" data-city="@weatherCityQuery">
+                    <i id="sysWeatherIcon" class="fas fa-spinner fa-spin" style="color:#f59e0b;"></i>
+                    <span id="sysWeatherCity">@rawBranchName</span>
+                    <strong id="sysWeatherTemp">--°C</strong>
+                </div>
+
+                <div class="topbar-chip">
+                    <i class="fas fa-clock" style="color:#3b82f6;"></i>
+                    <strong id="sysLiveClock" class="topbar-clock">--:--:-- --</strong>
+                </div>
+
+                <div class="topbar-user-chip">
+                    <div class="topbar-avatar">@avatarLetter</div>
+                    <div class="topbar-user-meta">
+                        <span class="topbar-uname">@username</span>
+                        <span class="topbar-urole">@role</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- PAGE BODY -->
+        <main class="sys-body">
+            @RenderBody()
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="sys-footer">
+            <span>&copy; 2026 PUB Reservation System &mdash; All rights reserved.</span>
+            <a href="/Home/Privacy">Privacy Policy</a>
+        </footer>
+
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="sysToastContainer"></div>
+
+    <div id="idleWarningModal" class="sys-modal-overlay">
+        <div class="sys-modal modal-sm">
+            <div class="modal-header-sys">
+                <h4 class="modal-title-sys"><i class="fas fa-clock"></i> Session Expiring</h4>
+            </div>
+            <div class="modal-body-sys" style="text-align: center;">
+                <p style="font-size: 14px; margin-bottom: 20px;">
+                    You have been inactive. For security, you will be logged out in
+                    <strong id="idleCountdown" style="color: var(--red);">30</strong> seconds.
+                </p>
+                <button class="btn-primary-sys" onclick="keepAlive()">Keep me Logged In</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="sys-modal-overlay" id="profileModal">
+        <div class="sys-modal">
+            <div class="modal-header-sys">
+                <h3 class="modal-title-sys"><i class="fas fa-user-cog"></i> Account Settings</h3>
+                <button class="modal-close-sys" onclick="closeModalSafe('profileModal')"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="modal-body-split">
+                <div class="modal-sidebar">
+                    <button class="modal-nav-btn active" onclick="switchTab('tab-profile', this)">Personalization</button>
+                    <button class="modal-nav-btn" onclick="switchTab('tab-security', this)">System Security</button>
+                </div>
+
+                <div class="modal-main">
+                    <div id="tab-profile" class="tab-content active">
+                        <div class="profile-upload-area" style="text-align: center; margin-bottom: 20px;">
+                            <img src="@(Context.Session.GetString("ProfilePicturePath") ?? "/images/default-avatar.png")"
+                                 id="previewPhoto"
+                                 style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;"
+                                 onerror="this.src='/images/default-avatar.png';">
+
+                            <input type="file" id="photoInput" accept="image/*" onchange="previewImage(this)" style="display:none;">
+                            <br><br>
+                            <button type="button" class="btn-ghost-sys" onclick="document.getElementById('photoInput').click()">Change Photo</button>
+                        </div>
+                        <div class="form-group-sys">
+                            <label>Display Name</label>
+                            <input type="text" id="updateName" class="form-control-sys" value="@Context.Session.GetString("User_FullName")">
+                        </div>
+                    </div>
+
+                    <div id="tab-security" class="tab-content">
+                        <div class="security-grid-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+
+                            <div class="form-group-sys" style="margin-bottom: 0;">
+                                <label>Username</label>
+                                <input type="text" id="updateUsername" class="form-control-sys" value="@Context.Session.GetString("Username")" placeholder="Enter username">
+                            </div>
+
+                            <div class="form-group-sys" style="margin-bottom: 0;">
+                                <label>Current Password</label>
+                                <input type="password" id="currPass" class="form-control-sys" placeholder="Required to save changes">
+                            </div>
+
+                            <div class="form-group-sys" style="margin-bottom: 0;">
+                                <label>New Password</label>
+                                <input type="password" id="newPass" class="form-control-sys" placeholder="Leave blank to keep current">
+                            </div>
+
+                            <div class="form-group-sys" style="margin-bottom: 0;">
+                                <label>Confirm Password</label>
+                                <input type="password" id="confirmPass" class="form-control-sys" placeholder="Confirm new password">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer-sys">
+                <button class="btn-ghost-sys" onclick="closeModalSafe('profileModal')">Cancel</button>
+                <button class="btn-primary-sys" onclick="saveProfileChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        (function () {
+            var IDLE_TIMEOUT = 180000; // 3 minutes
+            var WARNING_TIME = 150000; // 2.5 minutes
+            var idleTimer = null;
+            var countdownTimer = null;
+
+            function registerActivity() {
+                // Only update lastActivity if the modal is NOT currently showing
+                var modal = document.getElementById('idleWarningModal');
+                if (!modal.classList.contains('active')) {
+                    localStorage.setItem('lastActivity', Date.now());
+                }
+            }
+
+            function checkIdle() {
+                var lastActivity = parseInt(localStorage.getItem('lastActivity') || Date.now());
+                var currentTime = Date.now();
+                var diff = currentTime - lastActivity;
+
+                if (diff >= IDLE_TIMEOUT) {
+                    // Time's up, force logout
+                    window.location.href = '/Account/Logout';
+                } else if (diff >= WARNING_TIME) {
+                    // Show modal if we hit warning threshold
+                    showWarning(Math.round((IDLE_TIMEOUT - diff) / 1000));
+                }
+            }
+
+            function showWarning(secondsRemaining) {
+                var modal = document.getElementById('idleWarningModal');
+                var display = document.getElementById('idleCountdown');
+
+                // Add BOTH classes so it works on older pages AND the new Buses page!
+                modal.classList.add('active');
+                modal.classList.add('active-modal');
+
+                // Optional: Lock background scroll if the page supports it
+                document.body.classList.add('modal-open');
+
+                display.textContent = secondsRemaining;
+            }
+
+            // 🛑 This is the ONLY function that resets the session
+            window.keepAlive = function() {
+                localStorage.setItem('lastActivity', Date.now()); // Reset timer
+                var modal = document.getElementById('idleWarningModal');
+
+                // Remove BOTH classes to hide it
+                modal.classList.remove('active');
+                modal.classList.remove('active-modal');
+                document.body.classList.remove('modal-open');
+            };
+
+            // Track activity to update heartbeat
+            var events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+            events.forEach(function (name) {
+                document.addEventListener(name, registerActivity, true);
+            });
+
+            // Run the check every second
+            setInterval(checkIdle, 1000);
+
+            // Initialize
+            registerActivity();
+        })();
+
+
+                document.addEventListener("DOMContentLoaded", function () {
+            // ==========================================
+            // 1. ENGINE: LIVE REACTIVE CLOCK
+            // ==========================================
+            function initializeLiveSystemClock() {
+                const clockElement = document.getElementById("sysLiveClock");
+                if (!clockElement) return;
+
+                setInterval(function () {
+                    const now = new Date();
+                    let hours = now.getHours();
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const seconds = String(now.getSeconds()).padStart(2, '0');
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+
+                    hours = hours % 12;
+                    hours = hours ? hours : 12; // Handle structural midnight transformation
+                    const formattedHours = String(hours).padStart(2, '0');
+
+                    clockElement.textContent = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+                }, 1000);
+            }
+
+            // ==========================================
+            // 2. ENGINE: ASYNC BRANCH-AWARE WEATHER
+            // ==========================================
+        async function initializeBranchWeather() {
+            const widget = document.getElementById("sysWeatherWidget");
+            const iconEl = document.getElementById("sysWeatherIcon");
+            const tempEl = document.getElementById("sysWeatherTemp");
+            const cityEl = document.getElementById("sysWeatherCity");
+
+            if (!widget) return;
+
+            // Pull sanitized branch query string from the HTML data attribute
+            const cityQuery = widget.getAttribute("data-city");
+
+            // 🛑 REMEMBER: Replace with your actual OpenWeatherMap API Token Key
+            const apiKey = "4c7543e4fd95e7fb82243e41a0fdd740";
+            const fetchUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityQuery)},PH&units=metric&appid=${apiKey}`;
+
+            try {
+                const response = await fetch(fetchUrl);
+                if (!response.ok) throw new Error("API pipeline error");
+
+                const data = await response.json();
+
+                // 1. Update text fields dynamically
+                tempEl.textContent = `${Math.round(data.main.temp)}°C`;
+                cityEl.textContent = cityQuery + " Terminal";
+
+                // 2. Extract OpenWeatherMap Icon Condition String (e.g., "01d", "04n", "10d")
+                const weatherIconCode = data.weather[0].icon;
+                const isNight = weatherIconCode.endsWith('n'); // True if evening/night condition
+
+                // Reset icon properties cleanly before re-rendering
+                iconEl.className = "";
+                iconEl.removeAttribute("style");
+
+                // =================================================================
+                // REAL-TIME WEATHER CONDITION & TIME-OF-DAY ENGINE
+                // =================================================================
+                switch (weatherIconCode.substring(0, 2)) {
+
+                    case "01": // CLEAR SKIES
+                        if (isNight) {
+                            iconEl.className = "fas fa-moon";
+                            iconEl.style.color = "#38bdf8"; // Radiant lunar blue
+                            widget.style.borderLeft = "3px solid #1e40af"; // Deep night navy border
+                        } else {
+                            iconEl.className = "fas fa-sun";
+                            iconEl.style.color = "#eab308"; // High-noon amber yellow
+                            widget.style.borderLeft = "3px solid #eab308"; // Bright sunny border
+                        }
+                        break;
+
+                    case "02": // FEW CLOUDS (PARTLY CLOUDY)
+                        if (isNight) {
+                            iconEl.className = "fas fa-cloud-moon";
+                            iconEl.style.color = "#94a3b8"; // Soft slate gray night cloud
+                            widget.style.borderLeft = "3px solid #475569";
+                        } else {
+                            iconEl.className = "fas fa-cloud-sun";
+                            iconEl.style.color = "#f59e0b"; // Golden sun peaking past clouds
+                            widget.style.borderLeft = "3px solid #f59e0b";
+                        }
+                        break;
+
+                    case "03": // SCATTERED CLOUDS
+                    case "04": // BROKEN / OVERCAST CLOUDS (HEAVY CLOUDY)
+                        iconEl.className = "fas fa-cloud";
+                        iconEl.style.color = "#64748b"; // Low-exposure gray overcast skies
+                        widget.style.borderLeft = "3px solid #64748b";
+                        break;
+
+                    case "09": // SHOWER RAIN
+                    case "10": // MODERATE / HEAVY RAIN
+                        iconEl.className = "fas fa-cloud-showers-heavy";
+                        iconEl.style.color = "#3b82f6"; // Active rainy downpour blue
+                        widget.style.borderLeft = "3px solid #2563eb"; // Water blue border accent
+                        break;
+
+                    case "11": // THUNDERSTORMS
+                        iconEl.className = "fas fa-bolt";
+                        iconEl.style.color = "#eab308"; // Electric lightning spark flash
+                        widget.style.borderLeft = "3px solid #7c3aed"; // Threatening purple warning border
+                        break;
+
+                    case "50": // MIST / ATMOSPHERIC FOG
+                        iconEl.className = "fas fa-smog";
+                        iconEl.style.color = "#cbd5e1"; // Hazy terminal mist
+                        widget.style.borderLeft = "3px solid #cbd5e1";
+                        break;
+
+                    default: // DEFAULT RECOVERY ESCAPE PATH
+                        iconEl.className = isNight ? "fas fa-moon" : "fas fa-sun";
+                        iconEl.style.color = isNight ? "#38bdf8" : "#eab308";
+                        widget.style.borderLeft = "3px solid #3b82f6";
+                }
+
+            } catch (error) {
+                console.error("Weather refresh crash:", error);
+                // Clean baseline visual recovery standard fallback
+                iconEl.className = "fas fa-cloud";
+                iconEl.style.color = "#94a3b8";
+                tempEl.textContent = "28°C";
+                widget.style.borderLeft = "3px solid #e2e8f0";
+            }
+        }
+
+            // Initialize execution tracks
+            initializeLiveSystemClock();
+            initializeBranchWeather();
+
+            // Allow users to force manually update by double clicking the chip layout boundary box
+            document.getElementById("sysWeatherWidget").addEventListener("dblclick", initializeBranchWeather);
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </script>
+
+    <script>
+        // ===== LIVE CLOCK =====
+        function updateSysClock() {
+            var el = document.getElementById('sysLiveClock');
+            if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        updateSysClock();
+        setInterval(updateSysClock, 1000);
+
+        // ===== TOAST SYSTEM =====
+        function showToast(message, type) {
+            type = type || 'info';
+            var icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+            var container = document.getElementById('sysToastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'toast-item ' + type;
+            toast.innerHTML =
+                '<i class="fas ' + (icons[type] || icons.info) + ' toast-icon"></i>' +
+                '<span class="toast-msg">' + message + '</span>' +
+                '<button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+            container.appendChild(toast);
+            setTimeout(function() { if (toast.parentElement) toast.remove(); }, 4500);
+        }
+        window.showToast = showToast;
+
+        // ===== MODAL HELPERS =====
+                // ===== MODAL HELPERS =====
+        function openModal(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.classList.add('active');
+                el.classList.add('active-modal');
+                document.body.classList.add('modal-open'); // Added this to lock scroll
+            }
+        }
+
+        function closeModal(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('active');
+                el.classList.remove('active-modal');
+                document.body.classList.remove('modal-open');
+            }
+        }
+
+        // Create aliases so both 'openModal' and 'openModalSafe' work
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openModalSafe = openModal;
+        window.closeModalSafe = closeModal;
+
+        // Close modal on overlay click
+               // Locate this in _Layout.cshtml and update the condition
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('sys-modal-overlay')) {
+                // Only close if it's NOT the profile modal
+                if (e.target.id !== 'profileModal') {
+                    e.target.classList.remove('active');
+                    e.target.classList.remove('active-modal');
+                    document.body.classList.remove('modal-open');
+                }
+            }
+        });
+
+
+                window.togglePass = function(id, icon) {
+            var input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        };
+
+        // ===== SESSION CHECKER =====
+        var _sessionInterval = null;
+        function startSessionChecker() {
+            if (_sessionInterval) clearInterval(_sessionInterval);
+            _sessionInterval = setInterval(function() {
+                fetch('/Home/CheckSessionStatus')
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.isActive) {
+                            clearInterval(_sessionInterval);
+                            showToast('Your account has been deactivated. Redirecting...', 'warning');
+                            setTimeout(function() { window.location.href = '/Account/Logout'; }, 2200);
+                        }
+                    })
+                    .catch(function() {});
+            }, 5000);
+        }
+
+        if (document.body.getAttribute('data-logged-in') === 'true') {
+            startSessionChecker();
+        }
+
+        // ===== TEMPDATA NOTIFICATIONS =====
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (TempData["SuccessMessage"] != null)
+            {
+                    <text>showToast('@Html.Raw(JavaScriptEncoder.Default.Encode(TempData["SuccessMessage"].ToString()))', 'success');</text>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                    <text>showToast('@Html.Raw(JavaScriptEncoder.Default.Encode(TempData["ErrorMessage"].ToString()))', 'error');</text>
+            }
+        });
+
+
+
+
+
+         function previewImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            $('#previewPhoto').attr('src', e.target.result);
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+        
+
+
+
+
+                window.switchTab = function(tabId, btn) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            // Deactivate all buttons
+            document.querySelectorAll('.modal-nav-btn').forEach(b => b.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        };
+
+        // Updated Save logic
+                // Submits the form data via AJAX
+        function saveProfileChanges() {
+            var newPassword = $('#newPass').val();
+            var confirmPassword = $('#confirmPass').val();
+            var currentPassword = $('#currPass').val();
+
+            // Validation check before triggering network traffic
+            if (newPassword !== confirmPassword) {
+                if (typeof showToast === "function") showToast("New passwords do not match.", "error");
+                return;
+            }
+
+            // Pack inputs into a FormData object to handle image upload fields
+            var formData = new FormData();
+
+            var fileInput = document.getElementById('photoInput');
+            if (fileInput.files.length > 0) {
+                formData.append("ProfileImage", fileInput.files[0]);
+            }
+
+            formData.append("DisplayName", $('#updateName').val());
+            formData.append("Username", $('#updateUsername').val());
+            formData.append("CurrentPassword", currentPassword);
+            formData.append("NewPassword", newPassword);
+
+            $.ajax({
+                url: '/Home/SaveChangesAccountSettings', // Update this path if your action uses a different route
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        if (typeof showToast === "function") showToast(response.message, "success");
+
+                        // Clear the password fields out for security
+                        $('#currPass').val('');
+                        $('#newPass').val('');
+                        $('#confirmPass').val('');
+
+                        // Reload the page after a brief delay to apply changes across the layout cleanly
+                        setTimeout(function() {
+                            location.reload();
+                        }, 800);
+                    } else {
+                        if (typeof showToast === "function") showToast(response.message, "error");
+                    }
+                },
+                error: function() {
+                    if (typeof showToast === "function") showToast("An internal processing error stopped your updates.", "error");
+                }
+            });
+        }
+
+
+
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
